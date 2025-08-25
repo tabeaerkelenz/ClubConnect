@@ -101,9 +101,9 @@ clubtrack/
 
 ## 🚀 Roadmap
 
-- [x] Define project idea
+- [x] Define a project idea
 - [x] Database schema design
-- [ ] Database models for Trainer, Athlete, TrainingPlan, Goals, Attendance
+- [x] Database models for Trainer, Athlete, TrainingPlan, Goals, Attendance
 - [ ] CRUD operations for all entities
 - [ ] Authentication (JWT-based)
 - [ ] Role management (trainer vs. athlete)
