@@ -1,11 +1,8 @@
 from fastapi import FastAPI
+from ClubConnect.app.routers import club
 
 app = FastAPI(title="ClubTrack API")
-
-# restore routes later to crud and routes
-@app.get("/")
-def root():
-    return {"message": "Hello, FastAPI!"}
+app.include_router(club.router)
 
 
-# to run: uvicorn app.main:app --reload
+# to run: python -m uvicorn ClubConnect.app.main:app --reload
