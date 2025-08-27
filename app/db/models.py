@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 import enum
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, UniqueConstraint, Index, Text
-from sqlalchemy.orm import relationship
-from database import Base  # import Base from database.py
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from .database import Base  # import Base from database.py
 
 # –––––––––– Enums ––––––––––
 class UserRole(enum.Enum):
@@ -60,8 +60,8 @@ class User(Base, TimestampMixin):
 class Club(Base, TimestampMixin):
     __tablename__ = "clubs"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
 
     plans = relationship("Plan", back_populates="club", cascade="all, delete-orphan")
     memberships = relationship("Membership", back_populates="club", cascade="all, delete-orphan")
@@ -69,6 +69,7 @@ class Club(Base, TimestampMixin):
 class Membership(Base, TimestampMixin):
     __tablename__ = "memberships"
 
+# add the mapped and mapped_column here aswell
     id = Column(Integer, primary_key=True, autoincrement=True)
     club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False,)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False,)
@@ -93,7 +94,7 @@ class Plan(Base, TimestampMixin):
     description = Column(Text)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
 
-    user = relationship("User", back_populates="plans", foreign_keys="[created_by]")
+    user = relationship("User", back_populates="plans", foreign_keys=[created_by])
     club = relationship("Club", back_populates="plans")
     sessions = relationship("Session", back_populates="plan", cascade="all, delete-orphan")
     exercises = relationship("Exercise", back_populates="plan", cascade="all, delete-orphan")
@@ -132,7 +133,7 @@ class Session(Base, TimestampMixin):
     note = Column(Text)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    user = relationship("User", back_populates="sessions", foreign_keys="[created_by]")
+    user = relationship("User", back_populates="sessions", foreign_keys="Session.created_by")
     plan = relationship("Plan", back_populates="sessions")
     attendances = relationship("Attendance", back_populates="session", cascade="all, delete-orphan")
 
