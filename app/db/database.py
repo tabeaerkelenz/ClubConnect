@@ -1,15 +1,19 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # load dotenv
-load_dotenv()
+PROJECT_DIR = Path(__file__).resolve().parents[2]   # -> .../ClubConnect (inner)
+ENV_PATH = PROJECT_DIR / ".env"
+load_dotenv(ENV_PATH)
 
 # load from .env
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set. Create a .env and export DATABASE_URL.")
+    raise RuntimeError("DATABASE_URL is not set. Create a .env and export DATABASE_URL. Tried: {ENV_PATH}")
 
 # Create engine
 engine = create_engine(
