@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import enum
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, UniqueConstraint, Index, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, UniqueConstraint, Index, Text, Boolean
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .database import Base  # import Base from database.py
 
@@ -48,9 +48,10 @@ class User(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
-    email = Column(String(255), nullable=False, unique=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(250), nullable=False)
     role = Column(Enum(UserRole), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
 
     memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
     plans = relationship("Plan", back_populates="user", foreign_keys="Plan.created_by")
