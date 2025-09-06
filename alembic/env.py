@@ -1,4 +1,3 @@
-# alembic/env.py
 import os, sys
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
@@ -13,7 +12,7 @@ if PROJECT_ROOT not in sys.path:
 
 # Import the base
 from app.db.database import Base
-from app.db import models
+import app.db.models
 
 load_dotenv()  # loads .env from project root
 

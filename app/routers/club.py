@@ -4,10 +4,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ClubConnect.app.db.database import get_db
+from ClubConnect.app.db.models import User
 from ClubConnect.app.schemas.club import ClubCreate, ClubUpdate, ClubRead
 from ClubConnect.app.crud.club import create_club, get_club, list_clubs, update_club, delete_club
+from ClubConnect.app.auth.deps import get_current_active_user
 
-router = APIRouter(prefix="/clubs", tags=["clubs"])
+router = APIRouter(prefix="/clubs",
+                   tags=["clubs"],
+                   dependencies=[Depends(get_current_active_user)]
+                   )
+
 
 @router.post("", response_model=ClubRead, status_code=status.HTTP_201_CREATED)
 def create_club_endpoint(payload: ClubCreate, db: Session = Depends(get_db)):
