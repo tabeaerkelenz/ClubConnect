@@ -4,7 +4,7 @@ from jose import jwt
 from ClubConnect.app.auth.schemas import TokenPayload
 from ClubConnect.app.core.config import settings
 
-def crate_access_token(*, sub: str, expire_minutes: int | None = None) -> str:
+def create_access_token(*, sub: str, expire_minutes: int | None = None) -> str: # spelling mistake from crate_access_token to create_access_token
     exp_min = expire_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES
     exp = datetime.now(timezone.utc) + timedelta(minutes=exp_min)
     payload = {
