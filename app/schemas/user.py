@@ -1,19 +1,15 @@
 from email.policy import default
 from enum import Enum
 from typing import Optional
-
 from pydantic import BaseModel, EmailStr, Field
 
-
-class UserRole(str, Enum):
-    ADMIN = "admin"
-    COACH = "user"
-    MEMBER = "member"
+from ClubConnect.app.db.models import UserRole
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     email: EmailStr
     password: str = Field(min_length=8)
+    role: Optional[UserRole] = None
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=100)
