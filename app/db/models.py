@@ -71,13 +71,13 @@ class Membership(Base, TimestampMixin):
     __tablename__ = "memberships"
 
 # add the mapped and mapped_column here aswell
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False,)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False,)
-    role = Column(Enum(MembershipRole), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    club_id: Mapped[int] = mapped_column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role: Mapped[MembershipRole] = mapped_column(Enum(MembershipRole), nullable=False)
 
-    user = relationship("User", back_populates="memberships")
-    club = relationship("Club", back_populates="memberships")
+    user: Mapped["User"] = relationship("User", back_populates="memberships")
+    club: Mapped["Club"] = relationship("Club", back_populates="memberships")
 
     __table_args__ = (
         UniqueConstraint("club_id", "user_id", name="uq_membership_club_user"),
