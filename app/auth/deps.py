@@ -1,5 +1,4 @@
 from typing import Union, Callable
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
@@ -14,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 RoleArg = Union[UserRole, str]
 
 def _cred_exception():
-    raise HTTPException(
+    return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
@@ -41,9 +40,11 @@ def get_current_active_user(user = Depends(get_current_user)):
 
 def require_roles(*roles: RoleArg) -> Callable:
     allowed = {r.value if isinstance(r, UserRole) else r for r in roles}
+    if not allowed:
+        raise ValueError("Invalid roles")
 
     def _dep(user = Depends(get_current_user)):
-        user_role = user.role.value if hasattr(user.role, "value") else str(user.role)
+        user_role = getattr(user.role, "value", str(user.role)).lower()
         if user_role not in allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
