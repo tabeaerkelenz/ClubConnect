@@ -1,49 +1,60 @@
+from typing import Optional
+
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from ClubConnect.app.db import models
 from ClubConnect.app.db.models import Club
-from ClubConnect.app.schemas import club
 from ClubConnect.app.schemas.club import ClubCreate, ClubUpdate
 
-def create_club(db: Session, data: ClubCreate) -> models.Club:
-    club = models.Club(name=data.name)
+def create_club(db: Session, data: ClubCreate) -> Club:
+    club = Club(name=data.name)
     db.add(club)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise ValueError("Could not create club") from e
     db.refresh(club)
     return club
 
 def get_club(db: Session, club_id: int) -> Club | None:
-    stmt = select(Club).where(Club.id == club_id)
-    results = db.execute(stmt).scalars().first()
-    return results if results else None
+    return db.get(Club, club_id)
 
-def list_clubs(db: Session, skip: int = 0, limit: int = 50) -> list[Club]:
+def list_clubs(db: Session, skip: int = 0, limit: int = 50, q: Optional[str] = None) -> list[Club]:
+    limit = min(limit, 200)
     stmt = (
         select(Club)
         .order_by(Club.id.asc())
         .offset(skip)
         .limit(limit)
     )
-    results = db.execute(stmt).scalars().all()
-    return results if results else []
+    if q:
+        like = f"%{q}%"
+        stmt = stmt.where(Club.name.ilike(like))
+    stmt = stmt.order_by(Club.id.asc()).offset(skip).limit(limit)
+    result = db.execute(stmt).scalars().all()
+    return list(result)
 
 def update_club(db: Session, club_id: int, data: ClubUpdate) -> Club | None:
-    stmt = select(Club).where(Club.id == club_id)
-    club = db.execute(stmt).scalars().first()
+    club = db.get(Club, club_id)
     if not club:
         return None
 
     if data.name is not None:
         club.name = data.name
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise ValueError("Could not update club") from e
+
     db.refresh(club)
     return club
 
 def delete_club(db: Session, club_id: int) -> Club | None:
-    stmt = select(Club).where(Club.id == club_id)
-    results = db.execute(stmt).scalars().first()
+    results = db.get(Club, club_id)
     if not results:
         return None
     if results:
