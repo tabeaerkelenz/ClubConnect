@@ -13,7 +13,7 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 def authenticate_user(db: Session, identifier: str, password: str) -> User | None:
     email = identifier.strip().lower()
     user = get_user_by_email(db, email)
-    if not user or not verify_password(password, user.password_hash):
+    if not user or not user.check_password(password):
         return None
     return user
 
@@ -30,11 +30,11 @@ def create_user(db: Session, *, name: str, email: str, password: str, role: Opti
 
     user = User(
         name=name,
-        email=email,
-        password_hash=hash_password(password),
+        email=norm_email,
         role=assigned_role,
         is_active=True
     )
+    user.password = password
     db.add(user)
     try:
         db.commit()

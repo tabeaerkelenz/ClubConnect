@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ClubConnect.app.db.database import get_db
 from ClubConnect.app.auth.jwt import decode_token
-from ClubConnect.app.crud.user import get_user_by_email, get_user_by_username
+from ClubConnect.app.crud.user import get_user_by_email
 from ClubConnect.app.db.models import UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -28,7 +28,7 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
     except JWTError:
         raise _cred_exception()
 
-    user = get_user_by_email(db, sub) or get_user_by_username(db, sub)
+    user = get_user_by_email(db, sub)   # bugfix no get user by username needed anymore
     if not user or not user.is_active:
         raise _cred_exception()
     return user
