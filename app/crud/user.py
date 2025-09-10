@@ -15,7 +15,7 @@ def get_user_by_username(db: Session, username: str) -> User | None:
     return user
 
 def authenticate_user(db: Session, identifier: str, password: str) -> User | None:
-    user = (db.query(User).filter(User.username == identifier).first()      # type: ignore
+    user = (db.query(User).filter(User.name == identifier).first()      # type: ignore
             or db.query(User).filter(User.email == identifier).first())     # type: ignore
     if not user or not verify_password(password, user.password_hash):
         return None
