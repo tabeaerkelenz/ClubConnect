@@ -6,29 +6,27 @@ from sqlalchemy.orm import Session
 from ClubConnect.app.db.models import User, UserRole
 from ClubConnect.app.core.security import hash_password, verify_password
 
-def get_user_by_email(db: Session, email: EmailStr) -> User | None:
+def get_user_by_email(db: Session, email: str) -> User | None:
     user = db.query(User).filter(User.email == email).first()   # type: ignore
     return user
 
-def get_user_by_username(db: Session, username: str) -> User | None:
-    user = db.query(User).filter(User.username == username).first()     # type: ignore
-    return user
-
 def authenticate_user(db: Session, identifier: str, password: str) -> User | None:
-    user = (db.query(User).filter(User.name == identifier).first()      # type: ignore
-            or db.query(User).filter(User.email == identifier).first())     # type: ignore
+    email = identifier.strip().lower()
+    user = get_user_by_email(db, email)
     if not user or not verify_password(password, user.password_hash):
         return None
     return user
 
-def create_user(db: Session, *, name: str, email: EmailStr, password: str, role: Optional[UserRole] = None) -> User:
+def create_user(db: Session, *, name: str, email: str, password: str, role: Optional[UserRole] = None) -> User:
     """
-    Create a user. If role is not provided, defaults to UserRole.athlete (public signup).
+    Create a user, set defaults to UserRole.athlete (public signup).
     """
-    if get_user_by_email(db, email):
+    norm_email = str(email).strip().lower()
+
+    if get_user_by_email(db, norm_email):
         raise ValueError("Email already registered")
 
-    assigned_role = role or UserRole.athlete
+    assigned_role = UserRole.athlete
 
     user = User(
         name=name,
