@@ -9,7 +9,7 @@ from ClubConnect.app.auth.jwt import decode_token
 from ClubConnect.app.crud.user import get_user_by_email
 from ClubConnect.app.db.models import UserRole
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 RoleArg = Union[UserRole, str]
 
 def _cred_exception():
@@ -22,7 +22,7 @@ def _cred_exception():
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     try:
         payload = decode_token(token)
-        sub = payload.sub
+        sub = payload.get("sub") if isinstance(payload, dict) else getattr(payload, "sub", None)    # make the sub accept dict as well
         if not sub:
             raise _cred_exception()
     except JWTError:
