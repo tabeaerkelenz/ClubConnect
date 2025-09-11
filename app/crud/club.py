@@ -36,9 +36,6 @@ def list_clubs(db: Session, skip: int = 0, limit: int = 50, q: Optional[str] = N
     stmt = stmt.order_by(Club.name.asc()).offset(skip).limit(limit)
     return db.execute(stmt).scalars().all()
 
-def get_clubs(db: Session, skip: int = 0, limit: int = 50) -> List[Club]:
-    return list_clubs(db, skip=skip, limit=limit, q=None)
-
 def update_club(db: Session, club_id: int, data: ClubUpdate) -> Club | None:
     club = db.get(Club, club_id)
     if not club:
