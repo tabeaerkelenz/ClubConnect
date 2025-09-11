@@ -1,15 +1,15 @@
 from typing import Optional
 
 from pydantic import ValidationError, EmailStr
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ClubConnect.app.db.models import User, UserRole
-from ClubConnect.app.core.security import hash_password, verify_password
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    norm = email.strip().lower()        # normalize mail before comparison
-    user = db.query(User).filter(User.email == norm).first()   # type: ignore
-    return user
+    norm = email.strip().lower()
+    stmt = select(User).where(User.email == norm)
+    return db.execute(stmt).scalar_one_or_none()
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:       # change identifier with email explicitly
     user = get_user_by_email(db, email)
