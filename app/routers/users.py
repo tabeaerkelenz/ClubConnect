@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
-from ClubConnect.app.auth.deps import require_roles
+# delete redundant imports
 from ClubConnect.app.db.database import get_db
-from ClubConnect.app.db.models import UserRole
 from ClubConnect.app.schemas.user import UserCreate, UserUpdate, UserRead
 from ClubConnect.app.crud.user import create_user
 
