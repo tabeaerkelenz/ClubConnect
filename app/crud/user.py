@@ -7,11 +7,11 @@ from ClubConnect.app.db.models import User, UserRole
 from ClubConnect.app.core.security import hash_password, verify_password
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    user = db.query(User).filter(User.email == email).first()   # type: ignore
+    norm = email.strip().lower()        # normalize mail before comparison
+    user = db.query(User).filter(User.email == norm).first()   # type: ignore
     return user
 
-def authenticate_user(db: Session, identifier: str, password: str) -> User | None:
-    email = identifier.strip().lower()
+def authenticate_user(db: Session, email: str, password: str) -> User | None:       # change identifier with email explicitly
     user = get_user_by_email(db, email)
     if not user or not user.check_password(password):
         return None
