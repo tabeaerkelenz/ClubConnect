@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from ClubConnect.app.db.models import Club
 from ClubConnect.app.schemas.club import ClubCreate, ClubUpdate
@@ -22,19 +22,22 @@ def get_club(db: Session, club_id: int) -> Club | None:
     return db.get(Club, club_id)
 
 def list_clubs(db: Session, skip: int = 0, limit: int = 50, q: Optional[str] = None) -> list[Club]:
-    limit = min(limit, 200)
-    stmt = (
-        select(Club)
-        .order_by(Club.id.asc())
-        .offset(skip)
-        .limit(limit)
-    )
-    if q:
-        like = f"%{q}%"
-        stmt = stmt.where(Club.name.ilike(like))
-    stmt = stmt.order_by(Club.id.asc()).offset(skip).limit(limit)
-    result = db.execute(stmt).scalars().all()
-    return list(result)
+    # clamp + guard
+    skip = max(0, skip)
+    limit = max(1, min(limit, 200))
+
+    stmt = select(Club)
+
+    if q is not None:
+        q_norm = q.strip()
+        if q_norm:  # only filter if something remains after trimming
+            stmt = stmt.where(Club.name.ilike(f"%{q_norm}%"))
+
+    stmt = stmt.order_by(Club.name.asc()).offset(skip).limit(limit)
+    return db.execute(stmt).scalars().all()
+
+def get_clubs(db: Session, skip: int = 0, limit: int = 50) -> List[Club]:
+    return list_clubs(db, skip=skip, limit=limit, q=None)
 
 def update_club(db: Session, club_id: int, data: ClubUpdate) -> Club | None:
     club = db.get(Club, club_id)
