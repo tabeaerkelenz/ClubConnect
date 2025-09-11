@@ -1,5 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
@@ -12,13 +13,11 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class UserRead(BaseModel):
+    model_config = ConfigDict(form_attributes=True)  # v2 replacement for orm_mode
     id: int
     name: str
     email: EmailStr
     is_active: bool
-
-    class Config:
-        from_attributes = True
 
 class PasswordChange(BaseModel):
     old_password: str = Field(min_length=8)
