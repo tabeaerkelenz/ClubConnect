@@ -30,7 +30,7 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
 def list_memberships(club_id: int, db: Session = db_dep, me: User = me_dep) -> List[MembershipRead]:
     assert_is_member_of_club(db, user=me, club_id=club_id)
     rows = get_memberships_club(db=db, club_id=club_id)
-    return [MembershipRead.model_validate(r) for r in rows]
+    return [MembershipRead.model_validate(r, from_attributes=True) for r in rows]
 
 @router.post("", response_model=MembershipRead, status_code=201)
 def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
@@ -39,7 +39,7 @@ def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep
         membership = create_membership(db, club_id=club_id, email=payload.email, role=payload.role)
     except Exception as e:
         _map_crud_errors(e)
-    return MembershipRead.model_validate(membership)
+    return MembershipRead.model_validate(membership, from_attributes=True)
 
 @router.post("/join", response_model=MembershipRead, status_code=201)
 def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
@@ -53,7 +53,7 @@ def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> Membersh
 def change_role(club_id: int, membership_id: int, payload: MembershipUpdate, db: Session = db_dep, me: User = me_dep):
     assert_is_coach_of_club(db, user=me, club_id=club_id)
     try:
-        membership = update_membership_role(db, club_id=club_id, membership_id=membership_id)
+        membership = update_membership_role(db, club_id=club_id, membership_id=membership_id, new_role=payload.role)
     except Exception as e:
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership)
@@ -69,7 +69,7 @@ def remove_membership(club_id: int, membership_id: int, db: Session = db_dep, me
         assert_is_coach_of_club(db, user=me, club_id=club_id)
 
     try:
-        delete_membership(db, membership_id=membership_id)
+        delete_membership(db, membership_id=membership_id, club_id=club_id)
     except Exception as e:
         _map_crud_errors(e)
 

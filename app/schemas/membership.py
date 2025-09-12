@@ -4,7 +4,7 @@ from ClubConnect.app.db.models import MembershipRole
 
 
 class MembershipRead(BaseModel):
-    model_config = ConfigDict(form_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
     id: int
     club_id: int
     user_id: int
