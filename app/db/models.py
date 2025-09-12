@@ -54,7 +54,7 @@ class User(Base, TimestampMixin):
     is_active = Column(Boolean, nullable=False, default=True)
 
     memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
-    plans = relationship("Plan", back_populates="user", foreign_keys="Plan.created_by")
+    plans = relationship("Plan", back_populates="created_by", foreign_keys="Plan.created_by_id")
     sessions = relationship("Session", back_populates="user", foreign_keys="Session.created_by")
     attendances = relationship("Attendance", back_populates="user")
 
@@ -104,11 +104,11 @@ class Plan(Base, TimestampMixin):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     plan_type = Column(Enum(PlanType), nullable=False)  # club, personal
-    club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=True)
+    club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
     description = Column(Text)
-    created_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
 
-    user = relationship("User", back_populates="plans", foreign_keys=[created_by])
+    created_by = relationship("User", back_populates="plans", foreign_keys=[created_by_id])
     club = relationship("Club", back_populates="plans")
     sessions = relationship("Session", back_populates="plan", cascade="all, delete-orphan")
     exercises = relationship("Exercise", back_populates="plan", cascade="all, delete-orphan")
