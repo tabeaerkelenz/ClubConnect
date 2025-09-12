@@ -52,7 +52,8 @@ def my_clubs(db: Session = Depends(get_db), me: User = Depends(get_current_user)
         .where(Membership.user_id == me.id)
         .order_by(Club.name.asc())
     )
-    return db.execute(stmt).scalars().all()
+    clubs = db.execute(stmt).scalars().all()
+    return [ClubRead.model_validate(c) for c in clubs]
 
 @router.get("/{club_id:int}", response_model=ClubRead, status_code=status.HTTP_200_OK)
 def get_club_endpoint(club_id: int, db: Session = Depends(get_db)):
