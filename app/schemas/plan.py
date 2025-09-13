@@ -10,7 +10,7 @@ class PlanRead(BaseModel):
     name: str
     plan_type: PlanType
     club_id: int
-    description: str
+    description: Optional[str] = None   # made description optional
     created_by_id: int
     created_at: datetime
     updated_at: datetime
@@ -24,7 +24,7 @@ class PlanCreate(BaseModel):
     @classmethod
     def _name(cls, v: str) -> str:
         v = v.strip()
-        if not (1 <= len(v) <= 120):
+        if not (1 <= len(v) <= 100):    # correct length to model length
             raise ValueError("name length 1..120")
         return v
 
