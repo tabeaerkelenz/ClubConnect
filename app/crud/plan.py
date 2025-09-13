@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -25,13 +27,16 @@ def create_plan(db: Session, *, club_id: int, me: User, data: PlanCreate) -> Pla
         club_id=club_id,
         created_by_id=me.id,
     )
+    if not plan:
+        raise PlanNotFoundError
     db.add(plan)
+
     try:
         db.commit()
         db.refresh(plan)
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise NotCoachOfClubError()
+        raise e
     return plan
 
 
@@ -47,6 +52,11 @@ def get_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> Plan:
     assert_is_member_of_club(db, me.id, club_id)
     return _get_plan_in_club_or_404(db, club_id, plan_id)
 
+def get_plans(db: Session, *, club_id: int, me: User) -> List[Plan]:
+    assert_is_member_of_club(db, me.id, club_id)
+    stmt = select(Plan).where(Plan.club_id == club_id).order_by(Plan.name.asc())
+    return db.execute(stmt).scalars().all()
+
 def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: PlanUpdate) -> Plan:
     assert_is_coach_of_club(db, me.id, club_id)
     plan = _get_plan_in_club_or_404(db, club_id, plan_id)
@@ -61,7 +71,7 @@ def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: Plan
         raise NotCoachOfClubError()
     return plan
 
-def delete_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> bool:
+def delete_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> None:
     assert_is_coach_of_club(db, me.id, club_id)
     plan = _get_plan_in_club_or_404(db, club_id, plan_id)
     db.delete(plan)
