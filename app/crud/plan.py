@@ -1,0 +1,68 @@
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from ClubConnect.app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
+from ClubConnect.app.db.models import PlanType, Plan, User
+from ClubConnect.app.schemas.plan import PlanCreate, PlanUpdate
+
+
+class NotCoachOfClubError(Exception):
+    """Not a Coach of Club"""
+    pass
+
+class PlanNotFoundError(Exception):
+    """Plan not found"""
+    pass
+
+def create_plan(db: Session, *, club_id: int, me: User, data: PlanCreate) -> Plan:
+    assert_is_coach_of_club(db, me.id, club_id)
+
+    plan = Plan(
+        name=data.name,
+        plan_type=data.plan_type,
+        description=data.description,
+        club_id=club_id,
+        created_by_id=me.id,
+    )
+    db.add(plan)
+    try:
+        db.commit()
+        db.refresh(plan)
+    except IntegrityError:
+        db.rollback()
+        raise NotCoachOfClubError()
+    return plan
+
+
+def _get_plan_in_club_or_404(db, club_id: int, plan_id: int):
+    stmt = select(Plan).where(Plan.club_id == club_id, Plan.id == plan_id)
+    plan = db.execute(stmt).scalar_one_or_none()
+    if not plan:
+        raise PlanNotFoundError(f"Plan not found")
+    return plan
+
+
+def get_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> Plan:
+    assert_is_member_of_club(db, me.id, club_id)
+    return _get_plan_in_club_or_404(db, club_id, plan_id)
+
+def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: PlanUpdate) -> Plan:
+    assert_is_coach_of_club(db, me.id, club_id)
+    plan = _get_plan_in_club_or_404(db, club_id, plan_id)
+    payload = data.model_dump(exclude_unset=True)
+    for field, value in payload.items():
+        setattr(plan, field, value)
+    try:
+        db.commit()
+        db.refresh(plan)
+    except IntegrityError:
+        db.rollback()
+        raise NotCoachOfClubError()
+    return plan
+
+def delete_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> bool:
+    assert_is_coach_of_club(db, me.id, club_id)
+    plan = _get_plan_in_club_or_404(db, club_id, plan_id)
+    db.delete(plan)
+    db.commit()
