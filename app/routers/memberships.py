@@ -7,7 +7,9 @@ from ClubConnect.app.auth.deps import get_current_user
 from ClubConnect.app.db.database import get_db
 from ClubConnect.app.db.models import User, MembershipRole, Membership
 from ClubConnect.app.schemas.membership import MembershipRead, MembershipCreate, MembershipUpdate, MembershipCreate
-from ClubConnect.app.crud.membership import create_membership, get_memberships_club, update_membership_role, delete_membership, UserNotFoundError, MembershipNotFoundError, MembershipExistsError, LastCoachViolationError
+from ClubConnect.app.crud.membership import create_membership, get_memberships_club, update_membership_role, \
+    delete_membership, UserNotFoundError, MembershipNotFoundError, MembershipExistsError, LastCoachViolationError, \
+    get_memberships_user
 from ClubConnect.app.auth.membership_asserts import assert_not_last_coach_excluding, assert_is_coach_of_club, assert_is_member_of_club
 
 router = APIRouter(prefix="/memberships", tags=["memberships"])
@@ -27,10 +29,22 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
     raise
 
 @router.get("", response_model=List[MembershipRead])
-def list_memberships(club_id: int, db: Session = db_dep, me: User = me_dep) -> List[MembershipRead]:
+def list_memberships(club_id: int, db: Session = db_dep, me: User = me_dep, skip: int = 0, limit: int = 50) -> List[MembershipRead]:
     assert_is_member_of_club(db, user=me, club_id=club_id)
-    rows = get_memberships_club(db=db, club_id=club_id)
+    rows = get_memberships_club(db=db, club_id=club_id, skip=skip, limit=limit)
     return [MembershipRead.model_validate(r, from_attributes=True) for r in rows]
+
+@router.get("/memberships/mine", response_model=list[MembershipRead])
+def my_memberships(
+    db: Session = db_dep,
+    me = me_dep,
+    skip: int = 0,
+    limit: int = 50,
+)-> list[MembershipRead]:
+
+    assert_is_member_of_club(db, user=me, club_id=me.club_id)
+    memberships = get_memberships_user(db=db, user_id=me.id, skip=skip, limit=limit)
+    return [MembershipRead.model_validate(membership, from_attributes=True) for membership in memberships]
 
 @router.post("", response_model=MembershipRead, status_code=201)
 def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
