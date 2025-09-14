@@ -12,7 +12,12 @@ from ClubConnect.app.crud.membership import create_membership, get_memberships_c
     get_memberships_user
 from ClubConnect.app.auth.membership_asserts import assert_not_last_coach_excluding, assert_is_coach_of_club, assert_is_member_of_club
 
-router = APIRouter(prefix="/memberships", tags=["memberships"])
+# Club view (list members of a club)
+clubs_memberships_router = APIRouter(
+    prefix="/clubs/{club_id}/memberships", tags=["memberships"])
+
+# My view (all my memberships across clubs)
+memberships_router = APIRouter(prefix="/memberships", tags=["memberships"])
 
 db_dep = Depends(get_db)
 me_dep = Depends(get_current_user)
@@ -28,25 +33,22 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
         raise HTTPException(400, "Cannot remove the last coach of the club")
     raise
 
-@router.get("", response_model=List[MembershipRead])
+@clubs_memberships_router.get("", response_model=List[MembershipRead])
 def list_memberships(club_id: int, db: Session = db_dep, me: User = me_dep, skip: int = 0, limit: int = 50) -> List[MembershipRead]:
     assert_is_member_of_club(db, user=me, club_id=club_id)
     rows = get_memberships_club(db=db, club_id=club_id, skip=skip, limit=limit)
     return [MembershipRead.model_validate(r, from_attributes=True) for r in rows]
 
-@router.get("/memberships/mine", response_model=list[MembershipRead])
+@memberships_router.get("/mine", response_model=list[MembershipRead])
 def my_memberships(
     db: Session = db_dep,
-    me = me_dep,
-    skip: int = 0,
-    limit: int = 50,
+    me = me_dep
 )-> list[MembershipRead]:
-
-    assert_is_member_of_club(db, user=me, club_id=me.club_id)
-    memberships = get_memberships_user(db=db, user_id=me.id, skip=skip, limit=limit)
+        # delete assert_is_member_of_club() check. so all clubs clubs are shown
+    memberships = get_memberships_user(db=db, email=me.email)
     return [MembershipRead.model_validate(membership, from_attributes=True) for membership in memberships]
 
-@router.post("", response_model=MembershipRead, status_code=201)
+@clubs_memberships_router.post("", response_model=MembershipRead, status_code=201)
 def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
     assert_is_coach_of_club(db, user=me, club_id=club_id)
     try:
@@ -55,7 +57,7 @@ def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership, from_attributes=True)
 
-@router.post("/join", response_model=MembershipRead, status_code=201)
+@clubs_memberships_router.post("/join", response_model=MembershipRead, status_code=201)
 def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
     try:
         membership = create_membership(db, club_id=club_id, email=me.email, role=MembershipRole.member)
@@ -63,7 +65,7 @@ def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> Membersh
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership)
 
-@router.patch("/{membership_id:int}/role", response_model=MembershipRead)
+@clubs_memberships_router.patch("/{membership_id:int}/role", response_model=MembershipRead)
 def change_role(club_id: int, membership_id: int, payload: MembershipUpdate, db: Session = db_dep, me: User = me_dep):
     assert_is_coach_of_club(db, user=me, club_id=club_id)
     try:
@@ -72,7 +74,7 @@ def change_role(club_id: int, membership_id: int, payload: MembershipUpdate, db:
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership)
 
-@router.delete("/{membership_id:int}", status_code=204)
+@clubs_memberships_router.delete("/{membership_id:int}", status_code=204)
 def remove_membership(club_id: int, membership_id: int, db: Session = db_dep, me: User = me_dep):
     # load target to decide permission
     target = db.get(Membership, membership_id)
