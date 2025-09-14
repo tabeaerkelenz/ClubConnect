@@ -4,10 +4,10 @@ from sqlalchemy import select, func
 
 from ClubConnect.app.db.models import Membership, MembershipRole, User
 
-def assert_is_member_of_club(db: Session, user: User, club_id: int) -> Membership:
+def assert_is_member_of_club(db: Session, user_id: int, club_id: int) -> Membership:
     member = db.execute(
         select(Membership).where(
-            Membership.user_id == user.id,
+            Membership.user_id == user_id,      # fix Membership.user == user.id to Membership.user == user_id
             Membership.club_id == club_id
         )
     ).scalar_one_or_none()
@@ -15,10 +15,10 @@ def assert_is_member_of_club(db: Session, user: User, club_id: int) -> Membershi
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this club")
     return member
 
-def assert_is_coach_of_club(db: Session, user: User, club_id: int) -> Membership:
+def assert_is_coach_of_club(db: Session, user_id: int, club_id: int) -> Membership:
     member = db.execute(
         select(Membership).where(
-            Membership.user_id == user.id,
+            Membership.user_id == user_id,
             Membership.club_id == club_id
         )
     ).scalar_one_or_none()
