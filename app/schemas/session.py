@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator, field_serializer
 
 # limits for MVP; adjust if UI needs different caps
-_MAX_LOCATION = 120
+_MAX_LOCATION = 100
 _MAX_NOTE = 1000
 
 
