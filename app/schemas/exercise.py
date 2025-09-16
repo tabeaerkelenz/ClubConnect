@@ -1,9 +1,16 @@
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 from ClubConnect.app.db.models import DayLabel
 
 _MAX_NAME = 100
 _MAX_DESCRIPTION = 1000
+
+
+class ExerciseListParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    q: Optional[str] = None           # free-text search (optional)
+    skip: int = Field(0, ge=0)
+    limit: int = Field(50, ge=1, le=100)
 
 
 class ExerciseRead(BaseModel):
