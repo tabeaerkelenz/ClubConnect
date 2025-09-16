@@ -81,6 +81,8 @@ def create_session(
     payload = data.model_dump()
     obj = SessionModel(
         plan_id=plan_id,
+        name=payload["name"],
+        description=payload["description"],
         starts_at=payload["starts_at"],
         ends_at=payload["ends_at"],
         location=payload["location"],

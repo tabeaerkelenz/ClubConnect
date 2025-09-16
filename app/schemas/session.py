@@ -4,8 +4,18 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator, field_serializer
 
 # limits for MVP; adjust if UI needs different caps
+_MAX_NAME = 100
 _MAX_LOCATION = 100
 _MAX_NOTE = 1000
+
+
+def _clean_name(v: str) -> str:
+    v = v.strip()
+    if not v:
+        raise ValueError("name must not be empty")
+    if len(v) > _MAX_NAME:
+        raise ValueError(f"name exceeds max length ({_MAX_NAME})")
+    return v
 
 
 # ––––– READ –––––
@@ -14,6 +24,8 @@ class SessionRead(BaseModel):
 
     id: int
     plan_id: int
+    name: str
+    description: Optional[str] = None
     starts_at: datetime
     ends_at: datetime
     location: str
@@ -30,10 +42,16 @@ class SessionRead(BaseModel):
 
 # ––––––– WRITE ––––––––
 class SessionCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
     starts_at: datetime
     ends_at: datetime
     location: str
     note: Optional[str] = None
+
+    @field_validator("name")
+    def _v_create(cls, v: str) -> str:
+        return _clean_name(v)
 
     @field_validator("location")
     @classmethod
@@ -66,10 +84,16 @@ class SessionCreate(BaseModel):
 
 class SessionUpdate(BaseModel):
     # partial update; server-side will use exclude_unset=True
+    name: str
+    description: Optional[str] = None
     starts_at: Optional[datetime] = None
     ends_at: Optional[datetime] = None
     location: Optional[str] = None
     note: Optional[str] = None
+
+    @field_validator("name")
+    def _v_update(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None else _clean_name(v)
 
     @field_validator("location")
     @classmethod

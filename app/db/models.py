@@ -141,6 +141,8 @@ class Session(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     plan_id = Column(Integer, ForeignKey("plans.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
     starts_at = Column(DateTime(timezone=True), nullable=False)
     ends_at = Column(DateTime(timezone=True), nullable=False)
     location = Column(String(100), nullable=False)
