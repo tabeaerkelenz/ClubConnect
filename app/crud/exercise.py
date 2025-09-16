@@ -2,10 +2,18 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SASession
 
-from ClubConnect.app.crud.plan import PlanNotFoundError
-from ClubConnect.app.crud.session import Conflict
 from ClubConnect.app.db.models import Plan, Exercise
 
+
+class ExerciseNotFoundError(Exception):
+    """Exercise not found."""
+    pass
+class PlanNotFoundError(Exception):
+    """Plan not found."""
+    pass
+class ConflictError(Exception):
+    """Position already taken."""
+    pass
 
 def _get_plan_in_club_or_raise(db: SASession, club_id: int, plan_id: int) -> Plan:
     stmt = sa.select(Plan).where(Plan.id == plan_id, Plan.club_id == club_id,)
@@ -69,9 +77,9 @@ def create_exercise(db: SASession, club_id: int, plan_id: int, me, data) -> Exer
             if desired_pos is None and pgcode == "23505":
                 # another insert took this position; loop and try next _next_position()
                 continue
-            raise Conflict()
+            raise ConflictError()
 
-    raise Conflict()
+    raise ConflictError()
 
 
 def list_exercises(db: SASession, club_id: int, plan_id: int) -> list[Exercise]:
@@ -104,8 +112,8 @@ def update_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int,
         # if position changed and collided → Conflict
         pgcode = getattr(getattr(e, "orig", None), "pgcode", None)
         if ("position" in updates) and pgcode == "23505":
-            raise Conflict()
-        raise Conflict()
+            raise ConflictError()
+        raise ConflictError()
     db.refresh(exercise)
     return exercise
 
@@ -117,7 +125,7 @@ def delete_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int)
         db.commit()
     except IntegrityError:
         db.rollback()
-        Conflict()
+        ConflictError()
     return None
 
 
