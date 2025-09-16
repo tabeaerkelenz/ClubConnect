@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import enum
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, UniqueConstraint, Index, Text, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, UniqueConstraint, Index, Text, Boolean, text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .database import Base  # import Base from database.py
 
@@ -26,6 +26,10 @@ class DayLabel(enum.Enum):
     friday = "friday"
     saturday = "saturday"
     sunday = "sunday"
+
+class PlanAssigneeRole(enum.Enum):
+    coach = "coach"
+    athlete = "athlete"
 
 class AttendanceStatus(enum.Enum):
     present = "present"
@@ -156,6 +160,29 @@ class Session(Base, TimestampMixin):
     __table_args__ = (
         Index("ix_sessions_plan_id_starts_at", "plan_id", "starts_at"),
     )
+
+
+class PlanAssignee(Base):
+    __tablename__ = "plan_assignments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    plan_id = Column(Integer, ForeignKey("plans.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    role = Column(Enum(PlanAssigneeRole, name="planassignee_role"), nullable=False)
+    assigned_by_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+
+    # Relationships (no back_populates yet to avoid touching other models right now)
+    plan = relationship("Plan")
+    user = relationship("User", foreign_keys=[user_id])
+    assigned_by = relationship("User", foreign_keys=[assigned_by_id])
+
+    __table_args__ = (
+        UniqueConstraint("plan_id", "user_id", name="uq_plan_assignees_plan_user"),
+        Index("ix_plan_assignments_plan_id", "plan_id"),
+        Index("ix_plan_assignments_user_id", "user_id"),
+    )
+
 
 class Attendance (Base, TimestampMixin):
     __tablename__ = "attendances"
