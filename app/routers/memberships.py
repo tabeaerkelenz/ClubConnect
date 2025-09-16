@@ -35,8 +35,8 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
 
 @clubs_memberships_router.get("", response_model=List[MembershipRead])
 def list_memberships(club_id: int, db: Session = db_dep, me: User = me_dep, skip: int = 0, limit: int = 50) -> List[MembershipRead]:
-    assert_is_member_of_club(db, user=me, club_id=club_id)
-    rows = get_memberships_club(db=db, club_id=club_id, skip=skip, limit=limit)
+    assert_is_member_of_club(db, user_id=me.id, club_id=club_id)
+    rows = get_memberships_club(db=db, club_id=club_id)
     return [MembershipRead.model_validate(r, from_attributes=True) for r in rows]
 
 @memberships_router.get("/mine", response_model=list[MembershipRead])
