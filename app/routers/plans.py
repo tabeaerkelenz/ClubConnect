@@ -1,12 +1,13 @@
-from typing import NoReturn, List
+from typing import NoReturn, List, Literal
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ClubConnect.app.auth.deps import get_current_user
+from ClubConnect.app.auth.membership_asserts import assert_is_member_of_club
 from ClubConnect.app.crud.plan import NotCoachOfClubError, PlanNotFoundError, get_plan, get_plans, delete_plan, \
-    create_plan, update_plan
+    create_plan, update_plan, list_assigned_plans
 from ClubConnect.app.db.database import get_db
-from ClubConnect.app.db.models import User
+from ClubConnect.app.db.models import User, PlanAssigneeRole
 from ClubConnect.app.schemas.plan import PlanRead, PlanCreate, PlanUpdate
 
 router = APIRouter(prefix="/clubs/{club_id}/plans", tags=["plans"])
@@ -25,6 +26,16 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
 def list_plans_ep(club_id: int, db: Session = db_dep, me: User = me_dep) -> List[PlanRead]:
     plans = get_plans(db, club_id=club_id, me=me)
     return [PlanRead.model_validate(p) for p in plans]
+
+@router.get("/assigned", response_model=list[PlanRead])
+def list_assigned_plans_ep(
+    club_id: int,
+    role: Literal["coach", "athlete"] | None = Query(None),                 # optional filter
+    db: Session = Depends(get_db),
+    me = Depends(get_current_user),
+):
+    assert_is_member_of_club(db, me.id, club_id)
+    return list_assigned_plans(db, club_id, me, role=role)
 
 
 @router.post("", response_model=PlanRead, status_code=201)

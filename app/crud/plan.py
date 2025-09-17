@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ClubConnect.app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
-from ClubConnect.app.db.models import PlanType, Plan, User
+from ClubConnect.app.db.models import PlanType, Plan, User, PlanAssignee, PlanAssigneeRole
 from ClubConnect.app.schemas.plan import PlanCreate, PlanUpdate
 
 
@@ -55,6 +55,26 @@ def get_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> Plan:
 def get_plans(db: Session, *, club_id: int, me: User) -> List[Plan]:
     assert_is_member_of_club(db, me.id, club_id)
     stmt = select(Plan).where(Plan.club_id == club_id).order_by(Plan.name.asc())
+    return db.execute(stmt).scalars().all()
+
+def list_assigned_plans(db, club_id: int, me, role: str | PlanAssigneeRole) -> list[Plan]:
+    stmt = (
+        select(Plan)
+        .join(PlanAssignee, PlanAssignee.plan_id == Plan.id)
+        .where(Plan.club_id == club_id, PlanAssignee.user_id == me.id)
+        .order_by(Plan.name.asc())
+    )
+    if role:
+        # accept "member" as alias for athlete (optional)
+        if isinstance(role, str):
+            role_map = {"member": "athlete", "athlete": "athlete", "coach": "coach"}
+            try:
+                role = PlanAssigneeRole(role_map.get(role, role))
+            except ValueError:
+                # invalid role string -> no rows; alternatively raise
+                return []
+        stmt = stmt.where(PlanAssignee.role == role)
+
     return db.execute(stmt).scalars().all()
 
 def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: PlanUpdate) -> Plan:
