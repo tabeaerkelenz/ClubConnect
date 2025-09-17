@@ -7,7 +7,7 @@ from ClubConnect.app.auth.deps import get_current_active_user
 from ClubConnect.app.db.database import get_db
 from ClubConnect.app.crud.user import authenticate_user
 from ClubConnect.app.auth.schemas import Token
-from ClubConnect.app.auth.jwt import create_access_token
+from ClubConnect.app.auth.jwt_utils import create_access_token
 from ClubConnect.app.db.models import User
 from ClubConnect.app.schemas.user import UserRead, UserUpdate, PasswordChange
 

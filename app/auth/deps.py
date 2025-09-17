@@ -5,7 +5,7 @@ from jose import JWTError
 from sqlalchemy.orm import Session
 
 from ClubConnect.app.db.database import get_db
-from ClubConnect.app.auth.jwt import decode_token
+from ClubConnect.app.auth.jwt_utils import decode_token
 from ClubConnect.app.crud.user import get_user_by_email
 from ClubConnect.app.db.models import UserRole
 
