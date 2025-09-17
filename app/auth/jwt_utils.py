@@ -33,7 +33,6 @@ def decode_token(token: str) -> TokenPayload:
             token, key,
             algorithms=[settings.ALGORITHM],
             options={"verify_aud": False},
-            leeway=5,
         )
         if "sub" not in data or "exp" not in data:
             raise JWTError("missing required claim")
