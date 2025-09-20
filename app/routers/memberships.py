@@ -50,7 +50,7 @@ def my_memberships(
 
 @clubs_memberships_router.post("", response_model=MembershipRead, status_code=201)
 def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
-    assert_is_coach_of_club(db, user=me, club_id=club_id)
+    assert_is_coach_of_club(db, user_id=me.id, club_id=club_id)
     try:
         membership = create_membership(db, club_id=club_id, email=payload.email, role=payload.role)
     except Exception as e:
