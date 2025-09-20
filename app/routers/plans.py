@@ -2,13 +2,13 @@ from typing import NoReturn, List, Literal
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ClubConnect.app.auth.deps import get_current_user
-from ClubConnect.app.auth.membership_asserts import assert_is_member_of_club
-from ClubConnect.app.crud.plan import NotCoachOfClubError, PlanNotFoundError, get_plan, get_plans, delete_plan, \
+from app.auth.deps import get_current_user
+from app.auth.membership_asserts import assert_is_member_of_club
+from app.crud.plan import NotCoachOfClubError, PlanNotFoundError, get_plan, get_plans, delete_plan, \
     create_plan, update_plan, list_assigned_plans
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.db.models import User, PlanAssigneeRole
-from ClubConnect.app.schemas.plan import PlanRead, PlanCreate, PlanUpdate
+from app.db.database import get_db
+from app.db.models import User, PlanAssigneeRole
+from app.schemas.plan import PlanRead, PlanCreate, PlanUpdate
 
 router = APIRouter(prefix="/clubs/{club_id}/plans", tags=["plans"])
 

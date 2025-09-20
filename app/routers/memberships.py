@@ -3,14 +3,14 @@ from typing import NoReturn, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ClubConnect.app.auth.deps import get_current_user
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.db.models import User, MembershipRole, Membership
-from ClubConnect.app.schemas.membership import MembershipRead, MembershipCreate, MembershipUpdate, MembershipCreate
-from ClubConnect.app.crud.membership import create_membership, get_memberships_club, update_membership_role, \
+from app.auth.deps import get_current_user
+from app.db.database import get_db
+from app.db.models import User, MembershipRole, Membership
+from app.schemas.membership import MembershipRead, MembershipCreate, MembershipUpdate, MembershipCreate
+from app.crud.membership import create_membership, get_memberships_club, update_membership_role, \
     delete_membership, UserNotFoundError, MembershipNotFoundError, MembershipExistsError, LastCoachViolationError, \
     get_memberships_user
-from ClubConnect.app.auth.membership_asserts import assert_not_last_coach_excluding, assert_is_coach_of_club, assert_is_member_of_club
+from app.auth.membership_asserts import assert_not_last_coach_excluding, assert_is_coach_of_club, assert_is_member_of_club
 
 # Club view (list members of a club)
 clubs_memberships_router = APIRouter(

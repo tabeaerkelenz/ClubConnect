@@ -1,15 +1,14 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.db.models import Membership, MembershipRole, Club, User
-from ClubConnect.app.schemas.club import ClubCreate, ClubUpdate, ClubRead
-from ClubConnect.app.crud.club import create_club, get_club, list_clubs, update_club, delete_club
-from ClubConnect.app.auth.deps import get_current_active_user, get_current_user
-from ClubConnect.app.services.club import get_club_service, update_club_service, delete_club_service, \
+from app.db.database import get_db
+from app.db.models import Membership, MembershipRole, Club, User
+from app.schemas.club import ClubCreate, ClubUpdate, ClubRead
+from app.crud.club import create_club, get_club, list_clubs, update_club, delete_club
+from app.auth.deps import get_current_active_user, get_current_user
+from app.services.club import get_club_service, update_club_service, delete_club_service, \
     create_club_service, get_my_clubs_service
 
 router = APIRouter(

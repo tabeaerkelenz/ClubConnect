@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from jose.exceptions import ExpiredSignatureError
-from ClubConnect.app.auth.schemas import TokenPayload
-from ClubConnect.app.core.config import settings
+from app.auth.schemas import TokenPayload
+from app.core.config import settings
 
 class AuthError(Exception):
     """Domain error for auth problems."""

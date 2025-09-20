@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from ClubConnect.app.db.models import Plan, Membership, PlanAssignee
+from app.db.models import Plan, Membership, PlanAssignee
 
 # Domain errors (minimal local versions)
 class PlanNotFound(Exception):

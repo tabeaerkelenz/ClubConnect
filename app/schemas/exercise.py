@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator, Field
-from ClubConnect.app.db.models import DayLabel
+from app.db.models import DayLabel
 
 _MAX_NAME = 100
 _MAX_DESCRIPTION = 1000

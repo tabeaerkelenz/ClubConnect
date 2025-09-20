@@ -1,9 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from ClubConnect.app.crud import club as crud
-from ClubConnect.app.crud.club import get_clubs_by_user, create_club, add_membership
-from ClubConnect.app.db.models import MembershipRole
-from ClubConnect.app.schemas.club import ClubUpdate
+from app.crud import club as crud
+from app.crud.club import get_clubs_by_user, create_club, add_membership
+from app.db.models import MembershipRole
+from app.schemas.club import ClubUpdate
 
 def create_club_service(db, payload, user):
     try:

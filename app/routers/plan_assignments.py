@@ -2,11 +2,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.auth.deps import get_current_user
-from ClubConnect.app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
-from ClubConnect.app.schemas.plan_assignment import PlanAssigneeRead, PlanAssigneeCreate
-from ClubConnect.app.crud import plan_assignment as pa_crud
+from app.db.database import get_db
+from app.auth.deps import get_current_user
+from app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
+from app.schemas.plan_assignment import PlanAssigneeRead, PlanAssigneeCreate
+from app.crud import plan_assignment as pa_crud
 
 router = APIRouter(
     prefix="/clubs/{club_id}/plans/{plan_id}/assignees",

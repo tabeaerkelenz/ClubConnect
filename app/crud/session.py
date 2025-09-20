@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SASession     # update other table crud alswell to SASession and import sqlalchemy as sa
 
-from ClubConnect.app.db.models import Session as SessionModel, Plan  # adjust import to your layout
+from app.db.models import Session as SessionModel, Plan  # adjust import to your layout
 
 # --- Domain errors (no HTTP here) ---
 class SessionNotFound(Exception):

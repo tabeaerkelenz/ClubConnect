@@ -2,11 +2,11 @@ from typing import List
 from sqlalchemy.orm import Session as SASession
 from fastapi import APIRouter, Depends, Response, status, HTTPException
 
-from ClubConnect.app.schemas.session import SessionRead, SessionCreate, SessionUpdate
-from ClubConnect.app.crud import session as sessions_crud
-from ClubConnect.app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
-from ClubConnect.app.auth.deps import get_current_user
-from ClubConnect.app.db.database import get_db  # or wherever your get_db lives
+from app.schemas.session import SessionRead, SessionCreate, SessionUpdate
+from app.crud import session as sessions_crud
+from app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
+from app.auth.deps import get_current_user
+from app.db.database import get_db  # or wherever your get_db lives
 
 router = APIRouter(
     prefix="/clubs/{club_id}/plans/{plan_id}/sessions",

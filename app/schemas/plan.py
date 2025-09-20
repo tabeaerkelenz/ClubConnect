@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from ClubConnect.app.db.models import PlanType
+from app.db.models import PlanType
 
 class PlanRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

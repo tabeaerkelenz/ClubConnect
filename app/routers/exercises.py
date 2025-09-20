@@ -2,12 +2,12 @@ from fastapi import APIRouter, status, HTTPException
 from fastapi.params import Depends
 from sqlalchemy.orm import Session as SASession
 
-from ClubConnect.app.auth.deps import get_current_user
-from ClubConnect.app.auth.membership_asserts import assert_is_member_of_club
-from ClubConnect.app.crud.exercise import ExerciseNotFoundError, PlanNotFoundError, ConflictError, create_exercise, \
+from app.auth.deps import get_current_user
+from app.auth.membership_asserts import assert_is_member_of_club
+from app.crud.exercise import ExerciseNotFoundError, PlanNotFoundError, ConflictError, create_exercise, \
     list_exercises
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.schemas.exercise import ExerciseRead, ExerciseCreate, ExerciseListParams
+from app.db.database import get_db
+from app.schemas.exercise import ExerciseRead, ExerciseCreate, ExerciseListParams
 
 exercises_router = APIRouter(
     prefix="/clubs/{club_id}/plans/{plan_id}/exercises",

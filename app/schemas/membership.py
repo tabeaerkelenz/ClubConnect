@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-from ClubConnect.app.db.models import MembershipRole
+from app.db.models import MembershipRole
 
 
 class MembershipRead(BaseModel):

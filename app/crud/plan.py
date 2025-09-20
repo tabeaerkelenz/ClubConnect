@@ -4,9 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ClubConnect.app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
-from ClubConnect.app.db.models import PlanType, Plan, User, PlanAssignee, PlanAssigneeRole
-from ClubConnect.app.schemas.plan import PlanCreate, PlanUpdate
+from app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
+from app.db.models import PlanType, Plan, User, PlanAssignee, PlanAssigneeRole
+from app.schemas.plan import PlanCreate, PlanUpdate
 
 
 class NotCoachOfClubError(Exception):

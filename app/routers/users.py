@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.schemas.user import UserRead, UserCreate
-from ClubConnect.app.services.user import create_user_service
+from app.db.database import get_db
+from app.schemas.user import UserRead, UserCreate
+from app.services.user import create_user_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 

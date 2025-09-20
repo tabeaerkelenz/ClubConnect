@@ -2,9 +2,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
-from ClubConnect.app.crud.club import get_club
-from ClubConnect.app.crud.user import get_user_by_email
-from ClubConnect.app.db.models import Membership, MembershipRole
+from app.crud.club import get_club
+from app.crud.user import get_user_by_email
+from app.db.models import Membership, MembershipRole
 
 class UserNotFoundError(Exception):
     """No user with the given email exists."""

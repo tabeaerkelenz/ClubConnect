@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SASession
 
-from ClubConnect.app.db.models import Plan, Exercise
+from app.db.models import Plan, Exercise
 
 
 class ExerciseNotFoundError(Exception):

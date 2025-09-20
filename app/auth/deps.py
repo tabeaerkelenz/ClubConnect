@@ -4,10 +4,10 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
-from ClubConnect.app.db.database import get_db
-from ClubConnect.app.auth.jwt_utils import decode_token
-from ClubConnect.app.crud.user import get_user_by_email
-from ClubConnect.app.db.models import UserRole
+from app.db.database import get_db
+from app.auth.jwt_utils import decode_token
+from app.crud.user import get_user_by_email
+from app.db.models import UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 RoleArg = Union[UserRole, str]

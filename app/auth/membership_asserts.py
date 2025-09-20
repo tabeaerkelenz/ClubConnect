@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
-from ClubConnect.app.db.models import Membership, MembershipRole, User
+from app.db.models import Membership, MembershipRole, User
 
 def assert_is_member_of_club(db: Session, user_id: int, club_id: int) -> Membership:
     member = db.execute(

@@ -1,10 +1,8 @@
 from typing import Optional
-
-from pydantic import ValidationError, EmailStr
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from ClubConnect.app.db.models import User, UserRole
+from app.db.models import User, UserRole
 
 def get_user_by_email(db: Session, email: str) -> User | None:
     norm = email.strip().lower()

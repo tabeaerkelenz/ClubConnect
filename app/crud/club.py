@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from ClubConnect.app.db.models import Club, Membership
+from app.db.models import Club, Membership
 
 
 def add_membership(db, user_id, club_id, role):

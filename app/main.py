@@ -19,4 +19,5 @@ app.include_router(sessions.router)
 app.include_router(exercises.exercises_router)
 app.include_router(plan_assignments.router)
 
-# to run: python -m uvicorn ClubConnect.app.main:app --reload
+# to run from project root: python -m uvicorn ClubConnect.app.main:app --reload
+# to run from git root: python -m uvicorn app.main:app --reload
