@@ -7,9 +7,17 @@ from app.auth.deps import get_current_user
 from app.db.database import get_db
 from app.db.models import User, MembershipRole, Membership
 from app.schemas.membership import MembershipRead, MembershipCreate, MembershipUpdate, MembershipCreate
-from app.crud.membership import create_membership, get_memberships_club, update_membership_role, \
-    delete_membership, UserNotFoundError, MembershipNotFoundError, MembershipExistsError, LastCoachViolationError, \
-    get_memberships_user
+from app.services.membership import (
+    create_membership_service,
+    get_memberships_club_service,
+    update_membership_role_service,
+    delete_membership_service,
+    get_memberships_user_service,
+    UserNotFoundError,
+    MembershipNotFoundError,
+    MembershipExistsError,
+    LastCoachViolationError,
+)
 from app.auth.membership_asserts import assert_not_last_coach_excluding, assert_is_coach_of_club, assert_is_member_of_club
 
 # Club view (list members of a club)
@@ -36,7 +44,7 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
 @clubs_memberships_router.get("", response_model=List[MembershipRead])
 def list_memberships(club_id: int, db: Session = db_dep, me: User = me_dep, skip: int = 0, limit: int = 50) -> List[MembershipRead]:
     assert_is_member_of_club(db, user_id=me.id, club_id=club_id)
-    rows = get_memberships_club(db=db, club_id=club_id)
+    rows = get_memberships_club_service(db=db, club_id=club_id)
     return [MembershipRead.model_validate(r, from_attributes=True) for r in rows]
 
 @memberships_router.get("/mine", response_model=list[MembershipRead])
@@ -45,14 +53,14 @@ def my_memberships(
     me = me_dep
 )-> list[MembershipRead]:
         # delete assert_is_member_of_club() check. so all clubs clubs are shown
-    memberships = get_memberships_user(db=db, email=me.email)
+    memberships = get_memberships_user_service(db=db, email=me.email)
     return [MembershipRead.model_validate(membership, from_attributes=True) for membership in memberships]
 
 @clubs_memberships_router.post("", response_model=MembershipRead, status_code=201)
 def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
     assert_is_coach_of_club(db, user_id=me.id, club_id=club_id)
     try:
-        membership = create_membership(db, club_id=club_id, email=payload.email, role=payload.role)
+        membership = create_membership_service(db, club_id=club_id, email=payload.email, role=payload.role)
     except Exception as e:
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership, from_attributes=True)
@@ -60,7 +68,7 @@ def add_membership(club_id: int, payload: MembershipCreate, db: Session = db_dep
 @clubs_memberships_router.post("/join", response_model=MembershipRead, status_code=201)
 def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> MembershipRead:
     try:
-        membership = create_membership(db, club_id=club_id, email=me.email, role=MembershipRole.member)
+        membership = create_membership_service(db, club_id=club_id, email=me.email, role=MembershipRole.member)
     except Exception as e:
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership)
@@ -69,7 +77,7 @@ def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> Membersh
 def change_role(club_id: int, membership_id: int, payload: MembershipUpdate, db: Session = db_dep, me: User = me_dep):
     assert_is_coach_of_club(db, user_id=me.id, club_id=club_id)
     try:
-        membership = update_membership_role(db, club_id=club_id, membership_id=membership_id, new_role=payload.role)
+        membership = update_membership_role_service(db, club_id=club_id, membership_id=membership_id, new_role=payload.role)
     except Exception as e:
         _map_crud_errors(e)
     return MembershipRead.model_validate(membership)
@@ -85,7 +93,7 @@ def remove_membership(club_id: int, membership_id: int, db: Session = db_dep, me
         assert_is_coach_of_club(db, user=me, club_id=club_id)
 
     try:
-        delete_membership(db, membership_id=membership_id, club_id=club_id)
+        delete_membership_service(db, membership_id=membership_id, club_id=club_id)
     except Exception as e:
         _map_crud_errors(e)
 
