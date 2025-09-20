@@ -67,7 +67,7 @@ def self_join(club_id: int, db: Session = db_dep, me: User = me_dep) -> Membersh
 
 @clubs_memberships_router.patch("/{membership_id:int}/role", response_model=MembershipRead)
 def change_role(club_id: int, membership_id: int, payload: MembershipUpdate, db: Session = db_dep, me: User = me_dep):
-    assert_is_coach_of_club(db, user=me, club_id=club_id)
+    assert_is_coach_of_club(db, user_id=me.id, club_id=club_id)
     try:
         membership = update_membership_role(db, club_id=club_id, membership_id=membership_id, new_role=payload.role)
     except Exception as e:
