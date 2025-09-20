@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.auth.deps import get_current_user
 from app.auth.membership_asserts import assert_is_member_of_club
-from app.crud.plan import NotCoachOfClubError, PlanNotFoundError, get_plan, get_plans, delete_plan, \
-    create_plan, update_plan, list_assigned_plans
+from app.services.plan import *
 from app.db.database import get_db
 from app.db.models import User, PlanAssigneeRole
 from app.schemas.plan import PlanRead, PlanCreate, PlanUpdate
+
+from ClubConnect.app.services.plan import list_assigned_plans_service, create_plan_service, get_plan_service, \
+    update_plan_service, delete_plan_service
 
 router = APIRouter(prefix="/clubs/{club_id}/plans", tags=["plans"])
 
@@ -24,7 +26,8 @@ def _map_crud_errors(exc: Exception) -> NoReturn:
 
 @router.get("", response_model=List[PlanRead])
 def list_plans_ep(club_id: int, db: Session = db_dep, me: User = me_dep) -> List[PlanRead]:
-    plans = get_plans(db, club_id=club_id, me=me)
+    assert_is_member_of_club(db, me.id, club_id)
+    plans = get_plans_service(db, club_id=club_id, me=me)
     return [PlanRead.model_validate(p) for p in plans]
 
 @router.get("/mine", response_model=list[PlanRead])
@@ -35,32 +38,32 @@ def list_assigned_plans_ep(
     me = Depends(get_current_user),
 ):
     assert_is_member_of_club(db, me.id, club_id)
-    return list_assigned_plans(db, club_id, me, role=role)
+    return list_assigned_plans_service(db, club_id, me, role=role)
 
 
 @router.post("", response_model=PlanRead, status_code=201)
 def create_plan_ep(club_id: int, data: PlanCreate, db: Session = db_dep, me: User = me_dep)  -> PlanRead:   # append the function names with ep to avoid shadowing
     try:
-        plan = create_plan(db, club_id=club_id, me=me, data=data)
+        plan = create_plan_service(db, club_id=club_id, me=me, data=data)
         return PlanRead.model_validate(plan)
     except Exception as e:
         _map_crud_errors(e)
 
 @router.get("/{plan_id}", response_model=PlanRead)
 def get_plan_by_id_ep(club_id: int, plan_id: int, db: Session = db_dep, me: User = me_dep) -> PlanRead:
-    plan = get_plan(db, plan_id=plan_id, club_id=club_id, me=me)
+    plan = get_plan_service(db, plan_id=plan_id, club_id=club_id, me=me)
     if not plan:
         raise PlanNotFoundError("Plan not found")
     return PlanRead.model_validate(plan)
 
 @router.patch("/{plan_id}", response_model=PlanUpdate)
 def update_plan_by_id_ep(plan_id: int, club_id: int, data: PlanUpdate, db: Session = db_dep, me: User = me_dep) -> PlanRead:
-    plan = update_plan(db, club_id=club_id, plan_id=plan_id, me=me, data=data)  # fix update_plan instead of create_plan
+    plan = update_plan_service(db, club_id=club_id, plan_id=plan_id, me=me, data=data)  # fix update_plan instead of create_plan
     if not plan:
         raise NotCoachOfClubError("Only Coach of Club can update plan")
     return PlanRead.model_validate(plan)
 
 @router.delete("/{plan_id}", status_code=204)
 def delete_plan_by_id_ep(club_id: str, plan_id: int, db: Session = db_dep, me: User = me_dep):
-    delete_plan(db, club_id=club_id, plan_id=plan_id, me=me)
+    delete_plan_service(db, club_id=club_id, plan_id=plan_id, me=me)
     return None
