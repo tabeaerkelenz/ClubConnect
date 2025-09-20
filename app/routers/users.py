@@ -1,17 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-# delete redundant imports
 from ClubConnect.app.db.database import get_db
-from ClubConnect.app.schemas.user import UserCreate, UserUpdate, UserRead
-from ClubConnect.app.crud.user import create_user
+from ClubConnect.app.schemas.user import UserRead, UserCreate
+from ClubConnect.app.services.user import create_user_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user_endpoint(payload: UserCreate, db: Session = Depends(get_db)):
-    try:
-        user = create_user(db, name=payload.name, email=payload.email, password=payload.password)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    return user
-
+    return create_user_service(db, name=payload.name, email=payload.email, password=payload.password)
