@@ -68,11 +68,11 @@ class User(Base, TimestampMixin):
 
     @password.setter
     def password(self, plain: str):
-        from ClubConnect.app.core.security import hash_password
+        from app.core.security import hash_password
         self.password_hash = hash_password(plain)
 
     def check_password(self, plain: str) -> bool:
-        from ClubConnect.app.core.security import verify_password
+        from app.core.security import verify_password
         return verify_password(plain, self.password_hash)
 
 class Club(Base, TimestampMixin):
