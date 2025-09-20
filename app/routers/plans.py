@@ -9,7 +9,7 @@ from app.db.database import get_db
 from app.db.models import User, PlanAssigneeRole
 from app.schemas.plan import PlanRead, PlanCreate, PlanUpdate
 
-from ClubConnect.app.services.plan import list_assigned_plans_service, create_plan_service, get_plan_service, \
+from app.services.plan import list_assigned_plans_service, create_plan_service, get_plan_service, \
     update_plan_service, delete_plan_service
 
 router = APIRouter(prefix="/clubs/{club_id}/plans", tags=["plans"])
