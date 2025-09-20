@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session as SASession
 
 from app.auth.deps import get_current_user
 from app.auth.membership_asserts import assert_is_member_of_club
-from app.crud.exercise import ExerciseNotFoundError, PlanNotFoundError, ConflictError, create_exercise, \
-    list_exercises
+from app.services.exercise import *
 from app.db.database import get_db
 from app.schemas.exercise import ExerciseRead, ExerciseCreate, ExerciseListParams
+
+from app.services.exercise import create_exercise_service, list_exercises_service
 
 exercises_router = APIRouter(
     prefix="/clubs/{club_id}/plans/{plan_id}/exercises",
@@ -38,7 +39,7 @@ def create_exercise_in_plan(
 ):
     assert_is_member_of_club(db, me.id, club_id)
     try:
-        return  create_exercise(db, club_id, plan_id, me, data)
+        return  create_exercise_service(db, club_id, plan_id, me, data)
     except Exception as e:
         raise e
 
@@ -51,7 +52,7 @@ def list_exercises_in_plan(
 ):
     assert_is_member_of_club(db, me.id, club_id)
     try:
-        return list_exercises(db, club_id, plan_id)
+        return list_exercises_service(db, club_id, plan_id)
     except PlanNotFoundError:
         raise HTTPException(status_code=404, detail="Plan not found")
 
