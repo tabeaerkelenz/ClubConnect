@@ -6,7 +6,10 @@ from app.db.database import get_db
 from app.auth.deps import get_current_user
 from app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
 from app.schemas.plan_assignment import PlanAssigneeRead, PlanAssigneeCreate
-from app.crud import plan_assignment as pa_crud
+from app.services import *
+
+from ClubConnect.app.services.plan_assignment import list_assignees_service, add_assignee_service, \
+    remove_assignee_service
 
 router = APIRouter(
     prefix="/clubs/{club_id}/plans/{plan_id}/assignees",
@@ -29,7 +32,7 @@ def list_assignees_ep(club_id: int, plan_id: int,
                       me=Depends(get_current_user)):
     assert_is_member_of_club(db, me.id, club_id)
     try:
-        return pa_crud.list_assignees(db, club_id, plan_id, me)
+        return list_assignees_service(db, club_id, plan_id, me)
     except Exception as e:
         _map_error(e)
 
@@ -39,7 +42,7 @@ def add_assignee_ep(club_id: int, plan_id: int, data: PlanAssigneeCreate,
                     me=Depends(get_current_user)):
     assert_is_coach_of_club(db, me.id, club_id)
     try:
-        return pa_crud.add_assignee(db, club_id, plan_id, me, data)
+        return add_assignee_service(db, club_id, plan_id, me, data)
     except Exception as e:
         _map_error(e)
 
@@ -49,6 +52,6 @@ def remove_assignee_ep(club_id: int, plan_id: int, assignee_id: int,
                        me=Depends(get_current_user)):
     assert_is_coach_of_club(db, me.id, club_id)
     try:
-        pa_crud.remove_assignee(db, club_id, plan_id, assignee_id, me)
+        remove_assignee_service(db, club_id, plan_id, assignee_id, me)
     except Exception as e:
         _map_error(e)
