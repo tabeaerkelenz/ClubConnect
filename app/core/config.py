@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(...)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    DEMO_API_KEY: str | None = None
 
     class Config:
         env_file = ".env"

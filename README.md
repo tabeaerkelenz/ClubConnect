@@ -109,6 +109,16 @@ in `app/`:
    ```bash
    uvicorn app.main:app --reload
    ```
+   
+## ✨ Demo
+
+**Shell script**
+```bash
+chmod +x scripts/demo.sh
+./scripts/demo.sh
+# or:
+BASE_URL="http://localhost:8000" ./scripts/demo.sh
+```
 
 ## 🗺 Roadmap
 
