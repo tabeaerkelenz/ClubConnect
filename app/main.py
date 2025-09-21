@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from app.auth.routes import router as auth_router
-from app.routers import clubs, users, memberships, plans, sessions, exercises, plan_assignments
+from app.routers import clubs, users, memberships, plans, sessions, exercises, plan_assignments, demo, demo_ui
 
 app = FastAPI(title="ClubTrack API")
 
@@ -51,6 +51,8 @@ app.include_router(plans.router)
 app.include_router(sessions.router)
 app.include_router(exercises.exercises_router)
 app.include_router(plan_assignments.router)
+app.include_router(demo.router)
+app.include_router(demo_ui.router)
 
 # to run from project root: python -m uvicorn ClubConnect.app.main:app --reload
 # to run from git root: python -m uvicorn app.main:app --reload
