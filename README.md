@@ -128,4 +128,4 @@ in `app/`:
 
 If you have suggestions or questions, feel free to open an issue or reach out!
 
-[More about me](./about.md)
+[More about me](https://github.com/tabeaerkelenz)
