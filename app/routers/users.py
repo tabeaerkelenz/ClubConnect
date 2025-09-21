@@ -8,4 +8,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user_endpoint(payload: UserCreate, db: Session = Depends(get_db)):
-    return create_user_service(db, name=payload.name, email=payload.email, password=payload.password)
+    try:
+        return create_user_service(db, name=payload.name, email=payload.email, password=payload.password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

@@ -15,7 +15,7 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:   
         return None
     return user
 
-def create_user(db: Session, *, name: str, email: str, password: str, role: Optional[UserRole] = None) -> User:
+def create_user(db: Session, *, name: str, email: str, password: str) -> User:
     """
     Create a user, set defaults to UserRole.athlete (public signup).
     """

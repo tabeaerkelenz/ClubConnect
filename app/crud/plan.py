@@ -8,15 +8,13 @@ from app.auth.membership_asserts import assert_is_coach_of_club, assert_is_membe
 from app.db.models import PlanType, Plan, User, PlanAssignee, PlanAssigneeRole
 from app.schemas.plan import PlanCreate, PlanUpdate
 
-def create_plan(db: Session, *, club_id: int, me: User, data: PlanCreate) -> Plan:
-    assert_is_coach_of_club(db, me.id, club_id)
-
+def create_plan(db: Session, *, club_id: int, user_id: int, data: PlanCreate) -> Plan:
     plan = Plan(
         name=data.name,
         plan_type=data.plan_type,
         description=data.description,
         club_id=club_id,
-        created_by_id=me.id,
+        created_by_id=user_id,
     )
     db.add(plan)
     db.commit()
@@ -58,7 +56,6 @@ def list_assigned_plans(db, club_id: int, me, role: str | PlanAssigneeRole) -> l
     return db.execute(stmt).scalars().all()
 
 def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: PlanUpdate) -> Plan:
-    assert_is_coach_of_club(db, me.id, club_id)
     plan = _get_plan_in_club_or_404(db, club_id, plan_id)
     payload = data.model_dump(exclude_unset=True)
     for field, value in payload.items():

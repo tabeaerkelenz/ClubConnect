@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.auth.deps import get_current_user
-from app.auth.membership_asserts import assert_is_member_of_club
+from app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
 from app.services.plan import *
 from app.db.database import get_db
 from app.db.models import User, PlanAssigneeRole
@@ -37,12 +37,13 @@ def list_assigned_plans_ep(
     db: Session = Depends(get_db),
     me = Depends(get_current_user),
 ):
-    assert_is_member_of_club(db, me.id, club_id)
+    assert_is_coach_of_club(db, me.id, club_id)
     return list_assigned_plans_service(db, club_id, me, role=role)
 
 
 @router.post("", response_model=PlanRead, status_code=201)
 def create_plan_ep(club_id: int, data: PlanCreate, db: Session = db_dep, me: User = me_dep)  -> PlanRead:   # append the function names with ep to avoid shadowing
+    assert_is_member_of_club(db, me.id, club_id)
     try:
         plan = create_plan_service(db, club_id=club_id, me=me, data=data)
         return PlanRead.model_validate(plan)
@@ -58,6 +59,7 @@ def get_plan_by_id_ep(club_id: int, plan_id: int, db: Session = db_dep, me: User
 
 @router.patch("/{plan_id}", response_model=PlanUpdate)
 def update_plan_by_id_ep(plan_id: int, club_id: int, data: PlanUpdate, db: Session = db_dep, me: User = me_dep) -> PlanRead:
+    assert_is_member_of_club(db, me.id, club_id)
     plan = update_plan_service(db, club_id=club_id, plan_id=plan_id, me=me, data=data)  # fix update_plan instead of create_plan
     if not plan:
         raise NotCoachOfClubError("Only Coach of Club can update plan")
