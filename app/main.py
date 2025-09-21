@@ -35,7 +35,7 @@ def welcome():
     <div class="links">
       <a href="/docs">Open Swagger Docs</a>
       <a class="secondary" href="/healthz">Health Check</a>
-      <a class="secondary" href="/demo">Demo (if mounted)</a>
+      <a class="secondary" href="/demo">Demo</a>
     </div>
   </div>
 </div>
