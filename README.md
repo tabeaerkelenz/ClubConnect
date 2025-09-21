@@ -123,12 +123,9 @@ in `app/`:
 - [ ] Group plan assignments (v2)
 - [ ] Notifications & dashboards (v2)
 
-### ✨️ About Me
-
-I'm a backend engineering student at Masterschool, passionate about building useful tools with Python.
-
-This project is my first fully planned and implemented web application, combining everything I’ve learned so far – from database design and API development to clean architecture and deployment.
-
+---
 ### 📬 Feedback?
 
-If you have suggestions or questions, feel free to open an issue or contact me!
+If you have suggestions or questions, feel free to open an issue or reach out!
+
+[More about me](./about.md)
