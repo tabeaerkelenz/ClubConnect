@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.database import get_db
+from app.schemas.exercise import ExerciseCreate
 
 from app.schemas.session import SessionCreate
 from app.schemas.club import ClubCreate
@@ -61,7 +62,21 @@ def run_demo(
         location="Campus Gym",
         note="Intro session from demo endpoint",
     )
-    sess = exercise_service.create_exercise(db, club_id=club.id, plan_id=plan.id, me=coach, data=sess_in)
+    sess = session_service.create_session(db, club_id=club.id, plan_id=plan.id, me=coach, data=sess_in)
+
+    # 6) Exercise
+    exercise_in = ExerciseCreate(
+        name="Burpee",
+        description="Full-body conditioning movement.",
+        sets=3,
+        repetitions=12,
+        position=0,
+        day_label="monday",
+    )
+
+    ex = exercise_service.create_exercise_service(
+        db, club_id=club.id, plan_id=plan.id, me=coach, data=exercise_in
+    )
 
     return {
         "message": "Demo data created ✅",
@@ -71,4 +86,5 @@ def run_demo(
         "membership": {"id": getattr(membership, "id", None), "role": getattr(membership, "role", None)},
         "plan": {"id": plan.id, "name": plan.name},
         "session": {"id": getattr(sess, "id", None), "location": getattr(sess, "location", None)},
+        "exercise": {"id": getattr(ex, "id", None), "name": getattr(ex, "name", None)},
     }
