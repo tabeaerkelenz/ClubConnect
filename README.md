@@ -110,7 +110,7 @@ in `app/`:
    uvicorn app.main:app --reload
    ```
 
-## ⛙ Roadmap
+## 🗺 Roadmap
 
 - [x] Define a project idea
 - [x] Database schema design
@@ -119,6 +119,16 @@ in `app/`:
 - [x] Authentication (JWT-based)
 - [x] Role management (trainer vs. athlete)
 - [x] Deployment on a cloud service (Heroku, Render, or Railway)
+- [ ] Minimal frontend (planned for v2)
+- [ ] Group plan assignments (v2)
+- [ ] Notifications & dashboards (v2)
 
+### ✨️ About Me
 
+I'm a backend engineering student at Masterschool, passionate about building useful tools with Python.
 
+This project is my first fully planned and implemented web application, combining everything I’ve learned so far – from database design and API development to clean architecture and deployment.
+
+### 📬 Feedback?
+
+If you have suggestions or questions, feel free to open an issue or contact me!
