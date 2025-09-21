@@ -9,11 +9,12 @@ from app.crud.plan import (
     delete_plan,
 )
 from app.db.models import User
+from app.exceptions.plan import NotCoachOfClubError, PlanNotFoundError
 from app.schemas.plan import PlanCreate, PlanUpdate
 
 def create_plan_service(db: Session, club_id: int, me: User, data: PlanCreate):
     try:
-        return create_plan(db, club_id=club_id, me=me, data=data)
+        return create_plan(db, club_id=club_id, user_id=me.id, data=data)
     except NotCoachOfClubError:
         raise
     except Exception as e:

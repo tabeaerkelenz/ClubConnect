@@ -2,12 +2,13 @@ from sqlalchemy.exc import IntegrityError
 from app.crud.membership import *
 from app.crud.user import get_user_by_email
 from app.crud.club import get_club
-
-class UserNotFoundError(Exception): pass
-class MembershipExistsError(Exception): pass
-class ClubNotFoundError(Exception): pass
-class MembershipNotFoundError(Exception): pass
-class LastCoachViolationError(Exception): pass
+from app.exceptions.membership import (
+    UserNotFoundError,
+    MembershipExistsError,
+    ClubNotFoundError,
+    MembershipNotFoundError,
+    LastCoachViolationError,
+)
 
 def create_membership_service(db, club_id, email, role):
     user = get_user_by_email(db, email.strip().lower())
