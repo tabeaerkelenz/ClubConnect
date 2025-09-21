@@ -1,5 +1,5 @@
-# 🏋️‍♀️ ClubConnect
-The final backend Project of my Masterschool journey
+# 🏋️‍️ ClubConnect
+_The final backend Project of my Masterschool journey_
 
 
 **ClubTrack** is a backend application for sports clubs.  
@@ -7,7 +7,7 @@ It helps **trainers** and **athletes** to organize training, track goals, and ma
 
 ---
 
-## 🚀 Features (MVP)
+## Features (MVP)
 
 - Trainer and athlete management
 - Create and manage training plans
@@ -18,63 +18,65 @@ It helps **trainers** and **athletes** to organize training, track goals, and ma
 
 ## 🛠 Tech Stack
 
-- **Backend Framework:** FastAPI (Python)
-- **Database:** PostgreSQL
-- **ORM:** SQLAlchemy
-- **Migrations:** Alembic
+|  **Layer**   | **Tool/Library**         |
+|----------|----------------------|
+| Language | Python               |
+| Framework | FastAPI              |
+| ORM      | SQLAlchemy           |
+| Database | PostgreSQL           |
+| Migrations | Alembic              |
+| Deployment | Render.com           |
+| Auth     | JWT, OAuth2 Password Flow |
+| Validation | Pydantic             |
+
+
+---
+## 🔗 Live Deployment
+
+🔹 [https://clubconnect-0r4z.onrender.com](https://clubconnect-0r4z.onrender.com)  
+_(Swagger UI available at `/docs`)_
 
 ---
 
-## 📂 Project Structure (planned)
+## 📂 Project Structure 
 
 ```
-clubtrack/
-│
-├── app/                          
-│   ├── __init__.py               # Make app a package
-│   ├── main.py                   # FastAPI entry point
-│   │
-│   ├── core/                     # Core configs
-│   │   ├── config.py             # Settings (DB URL, secrets, env vars)
-│   │   └── security.py           # Password hashing, auth helpers
-│   │
-│   ├── db/                       # Database layer
-│   │   ├── database.py           # DB connection + session
-│   │   └── models.py             # SQLAlchemy models (Trainer, Athlete, etc.)
-│   │
-│   ├── schemas/                  # Pydantic schemas
-│   │   ├── trainer.py
-│   │   ├── athlete.py
-│   │   ├── workoutplan.py
-│   │   ├── goal.py
-│   │   └── attendance.py
-│   │
-│   ├── crud/                     # CRUD operations (one file per entity)
-│   │   ├── trainer.py
-│   │   ├── athlete.py
-│   │   ├── workoutplan.py
-│   │   ├── goal.py
-│   │   └── attendance.py
-│   │
-│   ├── routers/                  # API routes
-│   │   ├── trainer.py
-│   │   ├── athlete.py
-│   │   ├── workoutplan.py
-│   │   ├── goal.py
-│   │   └── attendance.py
-│   │
-│   └── utils/                    # Utility functions (e.g. email, validation)
-│
-├── tests/                        # Unit and integration tests
-│   ├── test_trainer.py
-│   └── test_athlete.py
-│
-├── alembic/                      # Database migrations (if used)
-│
-├── requirements.txt              # Python dependencies
-├── .env.example                  # Example environment variables
-├── .gitignore                    # Ignore venv, pycache, secrets
-└── README.md                     # Project documentation
+.
+└── ClubConnect
+    ├── README.md
+    ├── alembic/
+    ├── alembic.ini
+    ├── app/                     # see “Inside app/” below
+    ├── env.example                   
+    └── requirements.txt   
+```
+in `app/`:
+```
+# app/
+├── __init__.py
+├── main.py
+├── auth/
+│   ├── deps.py
+│   ├── jwt_utils.py
+│   └── routes.py
+├── core/
+│   ├── config.py
+│   └── security.py
+├── crud/
+│   ├── user.py
+│   └── plan.py                 # (more in repo)
+├── db/
+│   ├── database.py
+│   └── models.py
+├── routers/
+│   ├── users.py
+│   └── plans.py                # (more in repo)
+├── schemas/
+│   ├── user.py
+│   └── plan.py                 # (more in repo)
+└── services/
+    ├── user.py
+    └── plan.py                 # (more in repo)
 ```
 
 ## 🔧 Setup (local development)
@@ -84,7 +86,7 @@ clubtrack/
    git clone https://github.com/<your-username>/clubtrack.git
    cd clubtrack
    ```
-2. create a virtual environment
+2. Set up a virtual environment
    ```bash
    python -m venv venv
    source venv/bin/activate   # On Linux/Mac
@@ -94,20 +96,29 @@ clubtrack/
    ```bash
    pip install -r requirements.txt
    ```
-4. Start the server
+4. Configure environment (copy and edit `.env` file)
+   ```
+   cp .env.example .env
+   ```
+5. Run database migrations
+   ```bash
+   alembic upgrade head
+   ```
+
+6. Launch API 
    ```bash
    uvicorn app.main:app --reload
    ```
 
-## 🚀 Roadmap
+## ⛙ Roadmap
 
 - [x] Define a project idea
 - [x] Database schema design
 - [x] Database models for Trainer, Athlete, TrainingPlan, Goals, Attendance
-- [ ] CRUD operations for all entities
-- [ ] Authentication (JWT-based)
-- [ ] Role management (trainer vs. athlete)
-- [ ] Deployment on a cloud service (Heroku, Render, or Railway)
+- [x] CRUD operations for all entities
+- [x] Authentication (JWT-based)
+- [x] Role management (trainer vs. athlete)
+- [x] Deployment on a cloud service (Heroku, Render, or Railway)
 
 
 
