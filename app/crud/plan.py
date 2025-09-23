@@ -1,14 +1,14 @@
 from typing import List
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
-from app.db.models import PlanType, Plan, User, PlanAssignee, PlanAssigneeRole
+from app.db.models import Plan, User, PlanAssignee, PlanAssigneeRole
 from app.schemas.plan import PlanCreate, PlanUpdate
 
+
 def create_plan(db: Session, *, club_id: int, user_id: int, data: PlanCreate) -> Plan:
+    """Create a new plan in a club."""
     plan = Plan(
         name=data.name,
         plan_type=data.plan_type,
@@ -23,19 +23,27 @@ def create_plan(db: Session, *, club_id: int, user_id: int, data: PlanCreate) ->
 
 
 def _get_plan_in_club_or_404(db, club_id: int, plan_id: int):
+    """Helper to get a plan by ID within a club or raise 404 if not found."""
     stmt = select(Plan).where(Plan.club_id == club_id, Plan.id == plan_id)
     plan = db.execute(stmt).scalar_one_or_none()
     return plan
 
 
 def get_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> Plan:
+    """Get a plan by ID within a club, ensuring it exists."""
     return _get_plan_in_club_or_404(db, club_id, plan_id)
 
+
 def get_plans(db: Session, *, club_id: int, me: User) -> List[Plan]:
+    """List all plans in a club."""
     stmt = select(Plan).where(Plan.club_id == club_id).order_by(Plan.name.asc())
     return db.execute(stmt).scalars().all()
 
-def list_assigned_plans(db, club_id: int, me, role: str | PlanAssigneeRole) -> list[Plan]:
+
+def list_assigned_plans(
+    db, club_id: int, me, role: str | PlanAssigneeRole
+) -> list[Plan]:
+    """List all plans in a club assigned to the current user, optionally filtered by role."""
     stmt = (
         select(Plan)
         .join(PlanAssignee, PlanAssignee.plan_id == Plan.id)
@@ -55,7 +63,11 @@ def list_assigned_plans(db, club_id: int, me, role: str | PlanAssigneeRole) -> l
 
     return db.execute(stmt).scalars().all()
 
-def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: PlanUpdate) -> Plan:
+
+def update_plan(
+    db: Session, *, club_id: int, plan_id: int, me: User, data: PlanUpdate
+) -> Plan:
+    """Update a plan's details within a club."""
     plan = _get_plan_in_club_or_404(db, club_id, plan_id)
     payload = data.model_dump(exclude_unset=True)
     for field, value in payload.items():
@@ -64,7 +76,9 @@ def update_plan(db: Session, *, club_id: int, plan_id: int, me: User, data: Plan
     db.refresh(plan)
     return plan
 
+
 def delete_plan(db: Session, *, club_id: int, plan_id: int, me: User) -> None:
+    """Delete a plan by ID within a club."""
     plan = _get_plan_in_club_or_404(db, club_id, plan_id)
     db.delete(plan)
     db.commit()

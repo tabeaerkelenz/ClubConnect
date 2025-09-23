@@ -1,7 +1,13 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator, field_serializer
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    field_validator,
+    model_validator,
+    field_serializer,
+)
 
 # limits for MVP; adjust if UI needs different caps
 _MAX_NAME = 100
@@ -35,7 +41,9 @@ class SessionRead(BaseModel):
     updated_at: datetime
 
     # for standardize timestamps
-    @field_serializer("starts_at", "ends_at", "created_at", "updated_at", when_used="json")
+    @field_serializer(
+        "starts_at", "ends_at", "created_at", "updated_at", when_used="json"
+    )
     def _to_utc_z(self, dt: datetime) -> str:
         return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 

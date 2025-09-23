@@ -10,6 +10,7 @@ class MembershipRead(BaseModel):
     user_id: int
     role: MembershipRole
 
+
 class MembershipCreate(BaseModel):
     email: EmailStr
     role: MembershipRole
@@ -18,6 +19,7 @@ class MembershipCreate(BaseModel):
     @classmethod
     def _norm_email(cls, v: str) -> str:
         return v.strip().lower()
+
 
 class MembershipUpdate(BaseModel):
     role: MembershipRole
