@@ -7,24 +7,38 @@ from app.db.models import Plan, Exercise
 
 class ExerciseNotFoundError(Exception):
     """Exercise not found."""
-    pass
-class PlanNotFoundError(Exception):
-    """Plan not found."""
-    pass
-class ConflictError(Exception):
-    """Position already taken."""
+
     pass
 
+
+class PlanNotFoundError(Exception):
+    """Plan not found."""
+
+    pass
+
+
+class ConflictError(Exception):
+    """Position already taken."""
+
+    pass
+
+
 def _get_plan_in_club_or_raise(db: SASession, club_id: int, plan_id: int) -> Plan:
-    stmt = sa.select(Plan).where(Plan.id == plan_id, Plan.club_id == club_id,)
+    """Get plan by id and club_id or raise PlanNotFoundError."""
+    stmt = sa.select(Plan).where(
+        Plan.id == plan_id,
+        Plan.club_id == club_id,
+    )
     plan = db.execute(stmt).scalar_one_or_none()
     if not plan:
         raise PlanNotFoundError()
     return plan
 
+
 def _get_exercise_in_plan_and_club_or_raise(
     db: SASession, club_id: int, plan_id: int, exercise_id: int
 ) -> Exercise:
+    """Get exercise by id, plan_id and club_id or raise ExerciseNotFoundError."""
     stmt = (
         sa.select(Exercise)
         .join(Plan, Plan.id == Exercise.plan_id)
@@ -42,10 +56,15 @@ def _get_exercise_in_plan_and_club_or_raise(
 
 
 def _next_position(db: SASession, plan_id: int) -> int:
-    stmt = sa.select(sa.func.coalesce(sa.func.max(Exercise.position) + 1, 0)).where(Exercise.plan_id == plan_id)
+    """Get the next available position for an exercise in a plan."""
+    stmt = sa.select(sa.func.coalesce(sa.func.max(Exercise.position) + 1, 0)).where(
+        Exercise.plan_id == plan_id
+    )
     return db.execute(stmt).scalar_one()
 
+
 def create_exercise(db: SASession, club_id: int, plan_id: int, me, data) -> Exercise:
+    """Create a new exercise in a plan within a club."""
     _get_plan_in_club_or_raise(db, club_id, plan_id)
 
     payload = data.model_dump(exclude_none=True)
@@ -83,19 +102,33 @@ def create_exercise(db: SASession, club_id: int, plan_id: int, me, data) -> Exer
 
 
 def list_exercises(db: SASession, club_id: int, plan_id: int) -> list[Exercise]:
+    """List all exercises in a plan within a club, ordered by position ascending."""
     _get_plan_in_club_or_raise(db, club_id, plan_id)
 
-    stmt = sa.select(Exercise).where(Exercise.plan_id == plan_id).order_by(Exercise.position.asc())
+    stmt = (
+        sa.select(Exercise)
+        .where(Exercise.plan_id == plan_id)
+        .order_by(Exercise.position.asc())
+    )
     exercises = db.execute(stmt).scalars().all()
 
     return exercises
 
-def get_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int, me) -> Exercise:
+
+def get_exercise(
+    db: SASession, club_id: int, plan_id: int, exercise_id: int, me
+) -> Exercise:
+    """Get an exercise by id within a plan and club."""
     return _get_exercise_in_plan_and_club_or_raise(db, club_id, plan_id, exercise_id)
 
 
-def update_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int, me, data) -> Exercise:
-    exercise = _get_exercise_in_plan_and_club_or_raise(db, club_id, plan_id, exercise_id)
+def update_exercise(
+    db: SASession, club_id: int, plan_id: int, exercise_id: int, me, data
+) -> Exercise:
+    """Update an exercise by id within a plan and club."""
+    exercise = _get_exercise_in_plan_and_club_or_raise(
+        db, club_id, plan_id, exercise_id
+    )
 
     updates = data.model_dump(exclude_unset=True)
     # If position omitted → no change; if provided and None → drop it
@@ -118,8 +151,13 @@ def update_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int,
     return exercise
 
 
-def delete_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int) -> Exercise:
-    exercise = _get_exercise_in_plan_and_club_or_raise(db, club_id, plan_id, exercise_id)
+def delete_exercise(
+    db: SASession, club_id: int, plan_id: int, exercise_id: int
+) -> Exercise:
+    """Delete an exercise by id within a plan and club."""
+    exercise = _get_exercise_in_plan_and_club_or_raise(
+        db, club_id, plan_id, exercise_id
+    )
     db.delete(exercise)
     try:
         db.commit()
@@ -127,7 +165,3 @@ def delete_exercise(db: SASession, club_id: int, plan_id: int, exercise_id: int)
         db.rollback()
         ConflictError()
     return None
-
-
-
-

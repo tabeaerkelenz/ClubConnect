@@ -13,6 +13,7 @@ class PlanAssigneeRead(BaseModel):
     assigned_by_id: int
     created_at: datetime
 
+
 class PlanAssigneeCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     user_id: int

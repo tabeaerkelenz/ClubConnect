@@ -4,12 +4,20 @@ from fastapi import APIRouter, Depends, Response, status, HTTPException
 
 from app.schemas.session import SessionRead, SessionCreate, SessionUpdate
 from app.services.session import *
-from app.auth.membership_asserts import assert_is_member_of_club, assert_is_coach_of_club
+from app.auth.membership_asserts import (
+    assert_is_member_of_club,
+    assert_is_coach_of_club,
+)
 from app.auth.deps import get_current_user
 from app.db.database import get_db  # or wherever your get_db lives
 
-from app.services.session import list_sessions_service, create_session_service, get_session_service, \
-    update_session_service, delete_session_service
+from app.services.session import (
+    list_sessions_service,
+    create_session_service,
+    get_session_service,
+    update_session_service,
+    delete_session_service,
+)
 
 router = APIRouter(
     prefix="/clubs/{club_id}/plans/{plan_id}/sessions",
@@ -18,13 +26,17 @@ router = APIRouter(
 
 
 _ERROR_MAP = {
-    NotClubMember:   (status.HTTP_403_FORBIDDEN,  "User is not a member of this club."),
-    NotCoach:        (status.HTTP_403_FORBIDDEN,  "Coach role required for this action."),
-    Conflict:        (status.HTTP_409_CONFLICT,   "Conflict (e.g., unique/constraint)."),
-    InvalidTimeRange:(status.HTTP_422_UNPROCESSABLE_ENTITY, "starts_at must be before ends_at."),
-    SessionNotFound: (status.HTTP_404_NOT_FOUND,  "Session not found."),
+    NotClubMember: (status.HTTP_403_FORBIDDEN, "User is not a member of this club."),
+    NotCoach: (status.HTTP_403_FORBIDDEN, "Coach role required for this action."),
+    Conflict: (status.HTTP_409_CONFLICT, "Conflict (e.g., unique/constraint)."),
+    InvalidTimeRange: (
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "starts_at must be before ends_at.",
+    ),
+    SessionNotFound: (status.HTTP_404_NOT_FOUND, "Session not found."),
 }
 DOMAIN_ERRORS = tuple(_ERROR_MAP.keys())
+
 
 def to_http_exc(err: Exception) -> HTTPException:
     # handles subclasses too (future-proof if you refine errors later)
@@ -32,7 +44,9 @@ def to_http_exc(err: Exception) -> HTTPException:
         if cls in _ERROR_MAP:
             code, detail = _ERROR_MAP[cls]
             return HTTPException(status_code=code, detail=detail)
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal error")
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal error"
+    )
 
 
 # ===== Collection =====

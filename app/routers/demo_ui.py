@@ -4,6 +4,7 @@ import os
 
 router = APIRouter(tags=["demo-ui"])
 
+
 @router.get("/demo", response_class=HTMLResponse)
 def demo_page():
     demo_key = os.getenv("DEMO_API_KEY", "")

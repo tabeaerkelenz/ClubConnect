@@ -12,11 +12,15 @@ from app.crud.exercise import (
 from app.db.models import User
 from app.schemas.exercise import ExerciseCreate, ExerciseUpdate
 
-def create_exercise_service(db: SASession, club_id: int, plan_id: int, me: User, data: ExerciseCreate):
+
+def create_exercise_service(
+    db: SASession, club_id: int, plan_id: int, me: User, data: ExerciseCreate
+):
     try:
         return create_exercise(db, club_id=club_id, plan_id=plan_id, me=me, data=data)
     except (PlanNotFoundError, ConflictError) as e:
         raise
+
 
 def list_exercises_service(db: SASession, club_id: int, plan_id: int):
     try:
@@ -24,20 +28,45 @@ def list_exercises_service(db: SASession, club_id: int, plan_id: int):
     except PlanNotFoundError:
         raise
 
-def get_exercise_service(db: SASession, club_id: int, plan_id: int, exercise_id: int, me: User):
+
+def get_exercise_service(
+    db: SASession, club_id: int, plan_id: int, exercise_id: int, me: User
+):
     try:
-        return get_exercise(db, club_id=club_id, plan_id=plan_id, exercise_id=exercise_id, me=me)
+        return get_exercise(
+            db, club_id=club_id, plan_id=plan_id, exercise_id=exercise_id, me=me
+        )
     except (PlanNotFoundError, ExerciseNotFoundError) as e:
         raise
 
-def update_exercise_service(db: SASession, club_id: int, plan_id: int, exercise_id: int, me: User, data: ExerciseUpdate):
+
+def update_exercise_service(
+    db: SASession,
+    club_id: int,
+    plan_id: int,
+    exercise_id: int,
+    me: User,
+    data: ExerciseUpdate,
+):
     try:
-        return update_exercise(db, club_id=club_id, plan_id=plan_id, exercise_id=exercise_id, me=me, data=data)
+        return update_exercise(
+            db,
+            club_id=club_id,
+            plan_id=plan_id,
+            exercise_id=exercise_id,
+            me=me,
+            data=data,
+        )
     except (PlanNotFoundError, ExerciseNotFoundError, ConflictError) as e:
         raise
 
-def delete_exercise_service(db: SASession, club_id: int, plan_id: int, exercise_id: int):
+
+def delete_exercise_service(
+    db: SASession, club_id: int, plan_id: int, exercise_id: int
+):
     try:
-        return delete_exercise(db, club_id=club_id, plan_id=plan_id, exercise_id=exercise_id)
+        return delete_exercise(
+            db, club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
+        )
     except (PlanNotFoundError, ExerciseNotFoundError, ConflictError) as e:
         raise

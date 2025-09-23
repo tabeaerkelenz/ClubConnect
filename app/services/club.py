@@ -1,9 +1,12 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
+
+from app.auth.membership_asserts import assert_is_coach_of_club
 from app.crud import club as crud
 from app.crud.club import get_clubs_by_user, create_club, add_membership
 from app.db.models import MembershipRole
 from app.schemas.club import ClubUpdate
+
 
 def create_club_service(db, payload, user):
     try:
@@ -14,21 +17,26 @@ def create_club_service(db, payload, user):
         db.rollback()
         raise HTTPException(status_code=409, detail="Club name already exists")
 
+
 def get_club_service(db, club_id: int):
     club = crud.get_club(db, club_id)
     if not club:
         raise HTTPException(status_code=404, detail="Club not found")
     return club
 
+
 def list_clubs_service(db, skip: int = 0, limit: int = 50, q: str | None = None):
     skip = max(0, skip)
     limit = max(1, min(limit, 200))
     return crud.list_clubs(db, skip, limit, q)
 
+
 def get_my_clubs_service(db, user):
     return get_clubs_by_user(db, user.id)
 
-def update_club_service(db, club_id: int, data: ClubUpdate):
+
+def update_club_service(db, user_id: int, club_id: int, data: ClubUpdate):
+    assert_is_coach_of_club(db, user_id, club_id)
     club = crud.get_club(db, club_id)
     if not club:
         raise HTTPException(status_code=404, detail="Club not found")
@@ -38,7 +46,9 @@ def update_club_service(db, club_id: int, data: ClubUpdate):
         db.rollback()
         raise HTTPException(status_code=409, detail="Club name already exists")
 
-def delete_club_service(db, club_id: int):
+
+def delete_club_service(db, user_id, club_id: int):
+    assert_is_coach_of_club(db, user_id, club_id)  # raises 403 if not
     club = crud.get_club(db, club_id)
     if not club:
         raise HTTPException(status_code=404, detail="Club not found")

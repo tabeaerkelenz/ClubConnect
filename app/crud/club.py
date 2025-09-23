@@ -4,23 +4,32 @@ from app.db.models import Club, Membership
 
 
 def add_membership(db, user_id, club_id, role):
+    """Add a user to a club with a specific role."""
     membership = Membership(user_id=user_id, club_id=club_id, role=role)
     db.add(membership)
     db.commit()
     db.refresh(membership)
     return membership
 
+
 def create_club(db: Session, name: str) -> Club:
+    """Create a new club."""
     club = Club(name=name)
     db.add(club)
     db.commit()
     db.refresh(club)
     return club
 
+
 def get_club(db: Session, club_id: int) -> Club | None:
+    """Get a club by its ID."""
     return db.get(Club, club_id)
 
-def list_clubs(db: Session, skip: int = 0, limit: int = 50, q: str | None = None) -> list[Club]:
+
+def list_clubs(
+    db: Session, skip: int = 0, limit: int = 50, q: str | None = None
+) -> list[Club]:
+    """List or search clubs with optional pagination and name filtering."""
     stmt = select(Club)
 
     if q:
@@ -28,7 +37,9 @@ def list_clubs(db: Session, skip: int = 0, limit: int = 50, q: str | None = None
     stmt = stmt.order_by(Club.name.asc()).offset(skip).limit(limit)
     return db.execute(stmt).scalars().all()
 
+
 def get_clubs_by_user(db: Session, user_id: int):
+    """Get all clubs a user is a member of."""
     return (
         db.query(Club)
         .join(Membership, Membership.club_id == Club.id)
@@ -37,13 +48,17 @@ def get_clubs_by_user(db: Session, user_id: int):
         .all()
     )
 
+
 def update_club(db: Session, club: Club, name: str) -> Club | None:
+    """Update a club's name."""
     if name is not None:
         club.name = name
     db.commit()
     db.refresh(club)
     return club
 
+
 def delete_club(db: Session, club: Club) -> Club | None:
+    """Delete a club."""
     db.delete(club)
     db.commit()

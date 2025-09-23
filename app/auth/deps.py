@@ -12,38 +12,70 @@ from app.db.models import UserRole
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 RoleArg = Union[UserRole, str]
 
+
 def _cred_exception():
+    """
+    Helper to return a 401 HTTPException for invalid credentials
+    :return: 401 Unauthorized HTTPException
+    """
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+
+def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
+):
+    """
+    Dependency to get the current user based on the JWT token
+    :param db: SQLAlchemy Session, provided by Depends
+    :param token: Dependency injection of the OAuth2 token (JWT)
+    :return: user instance
+    :raises HTTPException 401: if the token is invalid or user not found/inactive
+    """
     try:
         payload = decode_token(token)
-        sub = payload.get("sub") if isinstance(payload, dict) else getattr(payload, "sub", None)    # make the sub accept dict as well
+        sub = (
+            payload.get("sub")
+            if isinstance(payload, dict)
+            else getattr(payload, "sub", None)
+        )  # make the sub accept dict as well
         if not sub:
             raise _cred_exception()
     except JWTError:
         raise _cred_exception()
 
-    user = get_user_by_email(db, sub)   # bugfix no get user by username needed anymore
+    # bugfix no get user by username needed anymore
+    user = get_user_by_email(db, sub)
     if not user or not user.is_active:
         raise _cred_exception()
     return user
 
-def get_current_active_user(user = Depends(get_current_user)):
+
+def get_current_active_user(user=Depends(get_current_user)):
+    """
+    Dependency to get the current active user
+    :param user: dependency injection of the current user
+    :return: user instance
+    """
     if not user.is_active:
         raise _cred_exception()
     return user
 
+
 def require_roles(*roles: RoleArg) -> Callable:
+    """
+    Dependency factory to require specific user roles for a route
+    :param roles: Roles to allow (UserRole enum or str)
+    :return: user instance if role is allowed
+    """
     allowed = {r.value if isinstance(r, UserRole) else r for r in roles}
     if not allowed:
         raise ValueError("Invalid roles")
 
-    def _dep(user = Depends(get_current_user)):
+    def _dep(user=Depends(get_current_user)):
         user_role = getattr(user.role, "value", str(user.role)).lower()
         if user_role not in allowed:
             raise HTTPException(
@@ -51,5 +83,5 @@ def require_roles(*roles: RoleArg) -> Callable:
                 detail=f"Forbidden, role '{user_role}' not allowed",
             )
         return user
-    return _dep
 
+    return _dep
