@@ -11,7 +11,7 @@ from sqlalchemy import (
     Index,
     Text,
     Boolean,
-    text,
+    text, func, CheckConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .database import Base  # import Base from database.py
@@ -54,6 +54,7 @@ class AttendanceStatus(enum.Enum):
     present = "present"
     excused = "excused"
     absent = "absent"
+    late = "late"
 
 
 # –––––––––– Mixins –––––––––––
@@ -232,8 +233,11 @@ class PlanAssignee(Base):
         Integer, ForeignKey("plans.id", ondelete="CASCADE"), nullable=False
     )
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+        Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
     )
+
+    group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"))
+
     role = Column(Enum(PlanAssigneeRole, name="planassignee_role"), nullable=False)
     assigned_by_id = Column(
         Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
@@ -249,6 +253,13 @@ class PlanAssignee(Base):
 
     __table_args__ = (
         UniqueConstraint("plan_id", "user_id", name="uq_plan_assignees_plan_user"),
+        UniqueConstraint("plan_id", "group_id", name="uq_plan_assignees_plan_group"),
+
+        CheckConstraint(
+            "(user_id IS NOT NULL) <> (group_id IS NOT NULL)",
+            name="ck_plan_assignment_one_target",
+        ),
+
         Index("ix_plan_assignments_plan_id", "plan_id"),
         Index("ix_plan_assignments_user_id", "user_id"),
     )
@@ -264,13 +275,40 @@ class Attendance(Base, TimestampMixin):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    status = Column(Enum(AttendanceStatus), nullable=False)
+    status = Column(Enum(AttendanceStatus, name="attendance_status"), nullable=False, server_default="present")
+
+    checked_in_at = Column(DateTime(timezone=True), nullable=True)
+    checked_out_at = Column(DateTime(timezone=True), nullable=True)
+    recorded_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    note = Column(Text(), nullable=True)
 
     session = relationship("Session", back_populates="attendances")
     user = relationship("User", back_populates="attendances")
+    recorded_by = relationship("User", foreign_keys=[recorded_by_id])
 
     __table_args__ = (
         UniqueConstraint("session_id", "user_id", name="uq_attendance_session_user"),
         Index("ix_attendance_session_id", "session_id"),
         Index("ix_attendance_user_id", "user_id"),
     )
+
+
+class Group(Base):
+    __tablename__ = "groups"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    club_id: Mapped[int] = mapped_column(ForeignKey("clubs.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    description: Mapped[str | None]
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint("club_id", "name", name="uq_group_name_per_club"),)
+
+
+class GroupMembership(Base):
+    __tablename__ = "group_memberships"
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int]  = mapped_column(ForeignKey("users.id",  ondelete="CASCADE"), primary_key=True)
+    role: Mapped[str | None] = mapped_column(String(32))
+    joined_at: Mapped[datetime] = mapped_column(server_default=func.now())
