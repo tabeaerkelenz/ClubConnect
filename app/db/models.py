@@ -88,7 +88,7 @@ class User(Base, TimestampMixin):
     is_active = Column(Boolean, nullable=False, default=True)
 
     memberships = relationship(
-        "Membership", back_populates="user", cascade="all, delete-orphan"
+        "Membership", foreign_keys="Membership.user_id", back_populates="user", cascade="all, delete-orphan"
     )
     plans = relationship(
         "Plan", back_populates="created_by", foreign_keys="Plan.created_by_id"
@@ -96,7 +96,36 @@ class User(Base, TimestampMixin):
     sessions = relationship(
         "Session", back_populates="user", foreign_keys="Session.created_by"
     )
-    attendances = relationship("Attendance", back_populates="user")
+    recorded_attendances = relationship("Attendance", foreign_keys="Attendance.recorded_by_id", back_populates="recorded_by", lazy="selectin")
+
+    group_memberships = relationship(
+        "GroupMembership",
+        foreign_keys="GroupMembership.user_id",
+        back_populates="user",
+        lazy="selectin",
+    )
+
+    assigned_plan_assignments = relationship(
+        "PlanAssignee",
+        back_populates="assigned_by",
+        foreign_keys="PlanAssignee.assigned_by_id",
+        lazy="selectin",
+    )
+
+    plan_assignments_as_target = relationship(
+        "PlanAssignee",
+        back_populates="user",
+        foreign_keys="PlanAssignee.user_id",
+        lazy="selectin",
+    )
+
+    attendances = relationship(
+        "Attendance",
+        foreign_keys="Attendance.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     @property
     def password(self):
@@ -139,7 +168,7 @@ class Membership(Base, TimestampMixin):
     )
     role: Mapped[MembershipRole] = mapped_column(Enum(MembershipRole), nullable=False)
 
-    user: Mapped["User"] = relationship("User", back_populates="memberships")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="memberships", lazy="selectin")
     club: Mapped["Club"] = relationship("Club", back_populates="memberships")
 
     __table_args__ = (
@@ -248,8 +277,10 @@ class PlanAssignee(Base):
 
     # Relationships (no back_populates yet to avoid touching other models right now)
     plan = relationship("Plan")
-    user = relationship("User", foreign_keys=[user_id])
-    assigned_by = relationship("User", foreign_keys=[assigned_by_id])
+    user = relationship("User", foreign_keys=[user_id], back_populates="plan_assignments_as_target",
+        lazy="selectin",)
+    assigned_by = relationship("User", foreign_keys=[assigned_by_id], back_populates="assigned_plan_assignments", lazy="selectin")
+    group = relationship("Group", foreign_keys=[group_id], lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("plan_id", "user_id", name="uq_plan_assignees_plan_user"),
@@ -264,6 +295,8 @@ class PlanAssignee(Base):
         Index("ix_plan_assignments_user_id", "user_id"),
     )
 
+PlanAssignment = PlanAssignee
+
 
 class Attendance(Base, TimestampMixin):
     __tablename__ = "attendances"
@@ -275,16 +308,16 @@ class Attendance(Base, TimestampMixin):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    status = Column(Enum(AttendanceStatus, name="attendance_status"), nullable=False, server_default="present")
+    status = Column(Enum(AttendanceStatus, name="attendancestatus"), nullable=False, server_default="present")
 
     checked_in_at = Column(DateTime(timezone=True), nullable=True)
     checked_out_at = Column(DateTime(timezone=True), nullable=True)
     recorded_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     note = Column(Text(), nullable=True)
 
-    session = relationship("Session", back_populates="attendances")
-    user = relationship("User", back_populates="attendances")
-    recorded_by = relationship("User", foreign_keys=[recorded_by_id])
+    session = relationship("Session", back_populates="attendances", lazy="selectin")
+    user = relationship("User", foreign_keys=[user_id],back_populates="attendances", lazy="selectin")
+    recorded_by = relationship("User", foreign_keys=[recorded_by_id], back_populates="recorded_attendances", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("session_id", "user_id", name="uq_attendance_session_user"),
@@ -303,6 +336,13 @@ class Group(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
+    memberships = relationship(
+        "GroupMembership",
+        back_populates="group",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
     __table_args__ = (UniqueConstraint("club_id", "name", name="uq_group_name_per_club"),)
 
 
@@ -312,3 +352,6 @@ class GroupMembership(Base):
     user_id: Mapped[int]  = mapped_column(ForeignKey("users.id",  ondelete="CASCADE"), primary_key=True)
     role: Mapped[str | None] = mapped_column(String(32))
     joined_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="group_memberships", lazy="selectin")
+    group: Mapped["Group"] = relationship("Group", back_populates="memberships", lazy="selectin")
