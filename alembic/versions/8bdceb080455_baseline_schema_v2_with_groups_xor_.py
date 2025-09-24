@@ -1,47 +1,89 @@
 """baseline schema v2 (with groups, XOR assignments, attendance fields)
 
 Revision ID: 8bdceb080455
-Revises: 
+Revises: 8f5b7b8c9726
 Create Date: 2025-09-24 12:21:59.459199
-
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision: str = '8bdceb080455'
+revision: str = "8bdceb080455"
 down_revision: Union[str, Sequence[str], None] = "8f5b7b8c9726"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+# --- 1) Guarded enum creation (idempotent) -----------------------------------
+def _ensure_enums_exist() -> None:
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
+                CREATE TYPE userrole AS ENUM ('athlete','trainer','admin');
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'membershiprole') THEN
+                -- values must match what's already in prod if it exists
+                CREATE TYPE membershiprole AS ENUM ('athlete','coach');
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'plantype') THEN
+                CREATE TYPE plantype AS ENUM ('club','personal');
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'daylabel') THEN
+                -- short weekday labels (align with your models)
+                CREATE TYPE daylabel AS ENUM ('mon','tue','wed','thu','fri','sat','sun');
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'planassignee_role') THEN
+                CREATE TYPE planassignee_role AS ENUM ('coach','athlete');
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'attendancestatus') THEN
+                CREATE TYPE attendancestatus AS ENUM ('present','excused','absent');
+            END IF;
+        END$$;
+        """
+    )
+
+
 def upgrade() -> None:
     """Upgrade schema."""
-    # ---- Enums (explicit create so baseline is deterministic) ----
-    userrole = sa.Enum("athlete", "trainer", "admin", name="userrole")
-    membershiprole = sa.Enum("member", "coach", name="membershiprole")
-    plantype = sa.Enum("club", "personal", name="plantype")
-    daylabel = sa.Enum(
-        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-        name="daylabel",
-    )
-    planassignee_role = sa.Enum("coach", "athlete", name="planassignee_role")
-    attendancestatus = sa.Enum("present", "excused", "absent", name="attendancestatus")
 
-    bind = op.get_bind()
-    for enum_type in (userrole, membershiprole, plantype, daylabel, planassignee_role, attendancestatus):
-        enum_type.create(bind, checkfirst=True)
+    # Make sure all enums exist exactly once.
+    _ensure_enums_exist()
+
+    # --- 2) Reuse named enums without re-creating them on table create --------
+    userrole = sa.Enum(
+        "athlete", "trainer", "admin", name="userrole", native_enum=True, create_type=False
+    )
+    membershiprole = sa.Enum(
+        "athlete", "coach", name="membershiprole", native_enum=True, create_type=False
+    )
+    plantype = sa.Enum("club", "personal", name="plantype", native_enum=True, create_type=False)
+    daylabel = sa.Enum(
+        "mon", "tue", "wed", "thu", "fri", "sat", "sun",
+        name="daylabel", native_enum=True, create_type=False
+    )
+    planassignee_role = sa.Enum(
+        "coach", "athlete", name="planassignee_role", native_enum=True, create_type=False
+    )
+    attendancestatus = sa.Enum(
+        "present", "excused", "absent", name="attendancestatus", native_enum=True, create_type=False
+    )
 
     # ---- Core tables ----
     op.create_table(
         "clubs",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
 
     op.create_table(
@@ -50,10 +92,10 @@ def upgrade() -> None:
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
         sa.Column("password_hash", sa.String(length=250), nullable=False),
-        sa.Column("role", userrole, nullable=False),
+        sa.Column("role", userrole, nullable=False, server_default="athlete"),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
     op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
 
@@ -63,8 +105,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
         sa.Column("club_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["club_id"], ["clubs.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("club_id", "name", name="uq_group_name_per_club"),
     )
@@ -75,8 +117,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
         sa.Column("group_id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["group_id"], ["groups.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("group_id", "user_id", name="uq_group_member"),
@@ -90,8 +132,8 @@ def upgrade() -> None:
         sa.Column("club_id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("role", membershiprole, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["club_id"], ["clubs.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("club_id", "user_id", name="uq_membership_club_user"),
@@ -107,8 +149,8 @@ def upgrade() -> None:
         sa.Column("club_id", sa.Integer(), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("created_by_id", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["club_id"], ["clubs.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["created_by_id"], ["users.id"], ondelete="RESTRICT"),
     )
@@ -124,14 +166,14 @@ def upgrade() -> None:
         sa.Column("repetitions", sa.Integer(), nullable=True),
         sa.Column("position", sa.Integer(), nullable=True),
         sa.Column("day_label", daylabel, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["plan_id"], ["plans.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("plan_id", "position", name="uq_exercises_plan_position"),
     )
     op.create_index("ix_exercises_plan_id", "exercises", ["plan_id"])
 
-    # ---- Plan Assignments (now supports user OR group, XOR enforced) ----
+    # ---- Plan Assignments (supports user OR group, XOR) ----
     op.create_table(
         "plan_assignments",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
@@ -167,14 +209,14 @@ def upgrade() -> None:
         sa.Column("location", sa.String(length=100), nullable=False),
         sa.Column("note", sa.Text(), nullable=True),
         sa.Column("created_by", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["created_by"], ["users.id"]),
         sa.ForeignKeyConstraint(["plan_id"], ["plans.id"], ondelete="CASCADE"),
     )
     op.create_index("ix_sessions_plan_id_starts_at", "sessions", ["plan_id", "starts_at"])
 
-    # ---- Attendance (updated fields) ----
+    # ---- Attendance ----
     op.create_table(
         "attendances",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
@@ -185,8 +227,8 @@ def upgrade() -> None:
         sa.Column("checked_out_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("recorded_by_id", sa.Integer(), nullable=True),
         sa.Column("note", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.ForeignKeyConstraint(["session_id"], ["sessions.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["recorded_by_id"], ["users.id"], ondelete="SET NULL"),
@@ -199,7 +241,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Drop in reverse order (and drop enums last)
+    # Drop in reverse dependency order, then enums.
     op.drop_index("ix_attendance_recorded_by_id", table_name="attendances")
     op.drop_index("ix_attendance_user_id", table_name="attendances")
     op.drop_index("ix_attendance_session_id", table_name="attendances")
@@ -235,7 +277,7 @@ def downgrade() -> None:
 
     op.drop_table("clubs")
 
-    # Drop enums last
+    # Drop enums last (guarded).
     bind = op.get_bind()
     for enum_name in ("attendancestatus", "planassignee_role", "daylabel", "plantype", "membershiprole", "userrole"):
         sa.Enum(name=enum_name).drop(bind, checkfirst=True)
