@@ -1,4 +1,6 @@
 # app/schemas/group_membership.py
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Optional
 
@@ -14,7 +16,7 @@ class GroupMembershipRead(BaseModel):
     group_id: int
     user_id: int
     role: Optional[str] = None
-    joined_at: str  # oder datetime; wenn datetime: from_attributes macht ISO
+    joined_at: datetime
 
 # app/schemas/group_membership.py
 class GroupMembershipInvite(BaseModel):

@@ -12,7 +12,7 @@ from app.services.group_membership import (
     remove_group_member_service, invite_group_member_service,
 )
 
-router = APIRouter(prefix="/clubs/{club_id}/groups/{group_id}/group_memberships", tags=["group_memberships"])
+router = APIRouter(prefix="/clubs/{club_id}/groups/{group_id}/memberships", tags=["group_memberships"])
 
 @router.get("", response_model=list[GroupMembershipRead], response_model_exclude_none=True)
 def list_group_members_ep(club_id: int, group_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_user)):
