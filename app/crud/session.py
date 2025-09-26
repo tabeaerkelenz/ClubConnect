@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 # update other table crud alswell to SASession and import sqlalchemy as sa
-from sqlalchemy.orm import Session as SASession
+from sqlalchemy.orm import Session as SASession, Session
 
 # adjust import to your layout
 from app.db.models import Session as SessionModel, Plan
@@ -43,6 +44,12 @@ class NotCoach(Exception):
 
 
 # --- Internal helpers ---
+def get_session_club_id(db: Session, session_id: int) -> int | None:
+    return db.execute(
+        select(Plan.club_id)
+        .join(SessionModel, SessionModel.plan_id == Plan.id)
+        .where(SessionModel.id == session_id)
+    ).scalar_one_or_none()
 
 
 def _get_plan_in_club_or_raise(db: SASession, club_id: int, plan_id: int) -> Plan:
