@@ -2,8 +2,8 @@ from typing import List
 from sqlalchemy.orm import Session as SASession
 from fastapi import APIRouter, Depends, Response, status, HTTPException
 
+from app.exceptions.session import NotClubMember, NotCoach, Conflict, InvalidTimeRange, SessionNotFound
 from app.schemas.session import SessionRead, SessionCreate, SessionUpdate
-from app.services.session import *
 from app.auth.membership_asserts import (
     assert_is_member_of_club,
     assert_is_coach_of_club,
