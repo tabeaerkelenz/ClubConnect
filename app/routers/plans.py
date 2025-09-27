@@ -50,7 +50,7 @@ def list_assigned_plans_ep(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    assert_is_coach_of_club(db, me.id, club_id)
+    assert_is_member_of_club(db, me.id, club_id)
     return list_assigned_plans_service(db, club_id, me, role=role)
 
 
