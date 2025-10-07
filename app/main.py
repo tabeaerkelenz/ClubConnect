@@ -74,3 +74,4 @@ app.include_router(demo_ui.router)
 
 # to run from project root: python -m uvicorn ClubConnect.app.main:app --reload
 # to run from git root: python -m uvicorn app.main:app --reload
+# to run render demo: TS=$(date +%s) BASE_URL="https://clubconnect-0r4z.onrender.com" ./demo.sh
