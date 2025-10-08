@@ -1,5 +1,5 @@
-from typing import Optional
-from pydantic import BaseModel, ConfigDict, field_validator, Field
+from typing import Optional, Literal
+from pydantic import BaseModel, ConfigDict, field_validator, Field, model_validator
 from app.db.models import DayLabel
 
 _MAX_NAME = 100
@@ -34,6 +34,8 @@ class ExerciseCreate(BaseModel):
     repetitions: Optional[int] = None
     position: Optional[int] = None  # None = auto-append (max+1)
     day_label: Optional[DayLabel] = None
+    from_template_id: int | None = None
+    link_mode: Literal["snapshot", "linked"] | None = "snapshot"
 
     @field_validator("name")
     @classmethod
@@ -64,6 +66,15 @@ class ExerciseCreate(BaseModel):
         if v < 0:
             raise ValueError("Value must be positive")
         return v
+
+    @model_validator(mode="after")
+    def validate_choice(self):
+        provided_core = any([self.name, self.description, self.sets, self.repetitions])
+        if self.from_template_id and provided_core:
+            raise ValueError("Provide either from_template_id or full fields, not both.")
+        if not self.from_template_id and not provided_core:
+            raise ValueError("Either from_template_id or full fields are required.")
+        return self
 
 
 class ExerciseUpdate(ExerciseCreate):

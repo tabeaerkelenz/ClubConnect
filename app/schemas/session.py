@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import (
     BaseModel,
@@ -56,6 +56,8 @@ class SessionCreate(BaseModel):
     ends_at: datetime
     location: str
     note: Optional[str] = None
+    from_template_id: int | None = None
+    link_mode: Literal["snapshot", "linked"] | None = "snapshot"
 
     @field_validator("name")
     def _v_create(cls, v: str) -> str:
@@ -87,6 +89,14 @@ class SessionCreate(BaseModel):
             raise ValueError("starts_at and ends_at must be timezone-aware")
         if self.starts_at >= self.ends_at:
             raise ValueError("starts_at must be before ends_at")
+        return self
+
+    def validate_choice(self):
+        provided_core = any([self.name, self.description, self.starts_at, self.ends_at])
+        if self.from_template_id and provided_core:
+            raise ValueError("Provide either from_template_id or full fields, not both.")
+        if not self.from_template_id and not provided_core:
+            raise ValueError("Either from_template_id or full fields are required.")
         return self
 
 
