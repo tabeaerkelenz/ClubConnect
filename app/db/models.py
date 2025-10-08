@@ -56,6 +56,9 @@ class AttendanceStatus(enum.Enum):
     absent = "absent"
     late = "late"
 
+class LinkMode(enum.Enum):
+    snapshot = "snapshot"
+    linked = "linked"
 
 # –––––––––– Mixins –––––––––––
 
@@ -219,6 +222,10 @@ class Exercise(Base, TimestampMixin):
     repetitions = Column(Integer)
     position = Column(Integer)
     day_label = Column(Enum(DayLabel), nullable=True)
+    is_template = Column(Boolean, nullable=False, default=False)
+    template_id = Column(Integer, ForeignKey("exercises.id"), nullable=True)
+    link_mode = Column(Enum(LinkMode, name="linkmode"), nullable=False, server_default="snapshot")
+    template_version_used = Column(Integer, nullable=True)
 
     plan = relationship("Plan", back_populates="exercises")
 
@@ -232,6 +239,7 @@ class Session(Base, TimestampMixin):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
     plan_id = Column(
         Integer, ForeignKey("plans.id", ondelete="CASCADE"), nullable=False
     )
@@ -242,6 +250,10 @@ class Session(Base, TimestampMixin):
     location = Column(String(100), nullable=False)
     note = Column(Text)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_template = Column(Boolean, nullable=False, default=False)
+    template_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
+    link_mode = Column(Enum(LinkMode, name="linkmode"), nullable=False, server_default="snapshot")  # none, view, edit
+    template_version_used = Column(Integer, nullable=True)
 
     user = relationship(
         "User", back_populates="sessions", foreign_keys="Session.created_by"
