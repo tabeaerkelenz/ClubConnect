@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.auth.jwt_utils import decode_token
 from app.crud.user import get_user_by_email
-from app.db.models import UserRole
+from app.db.models import UserRole, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 RoleArg = Union[UserRole, str]
@@ -27,7 +27,7 @@ def _cred_exception():
 
 def get_current_user(
     db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
-):
+) -> User:
     """
     Dependency to get the current user based on the JWT token
     :param db: SQLAlchemy Session, provided by Depends
@@ -44,17 +44,17 @@ def get_current_user(
         )  # make the sub accept dict as well
         if not sub:
             raise _cred_exception()
-    except JWTError:
+        user_id = int(sub)
+    except (JWTError, ValueError, TypeError):
         raise _cred_exception()
 
-    # bugfix no get user by username needed anymore
-    user = get_user_by_email(db, sub)
+    user = db.get(User, user_id)
     if not user or not user.is_active:
         raise _cred_exception()
     return user
 
 
-def get_current_active_user(user=Depends(get_current_user)):
+def get_current_active_user(user: User = Depends(get_current_user)):
     """
     Dependency to get the current active user
     :param user: dependency injection of the current user

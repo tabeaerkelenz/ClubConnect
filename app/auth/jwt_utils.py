@@ -15,13 +15,13 @@ def _secret(val):  # handles SecretStr or plain str
     return val.get_secret_value() if hasattr(val, "get_secret_value") else val
 
 
-def create_access_token(*, sub: str, expire_minutes: int | None = None) -> str:
+def create_access_token(*, sub: int, expire_minutes: int | None = None) -> str:
     """Create a JWT access token."""
     now = datetime.now(timezone.utc)
     exp_min = expire_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES
     exp = now + timedelta(minutes=exp_min)
     payload = {
-        "sub": sub.strip().lower(),
+        "sub": str(sub),
         "iat": int(now.timestamp()),
         "exp": int(exp.timestamp()),
     }
