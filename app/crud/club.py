@@ -12,12 +12,25 @@ def add_membership(db, user_id, club_id, role):
     return membership
 
 
-def create_club(db: Session, name: str) -> Club:
+def create_club(db: Session,
+    *,
+    name: str,
+    country: str | None = None,
+    city: str | None = None,
+    sport: str | None = None,
+    founded_year: int | None = None,
+    description: str | None = None,
+) -> Club:
     """Create a new club."""
-    club = Club(name=name)
+    club = Club(name=name,
+        country=country,
+        city=city,
+        sport=sport,             # <-- matches column name
+        founded_year=founded_year,
+        description=description,
+    )
     db.add(club)
-    db.commit()
-    db.refresh(club)
+    db.flush()
     return club
 
 

@@ -11,7 +11,7 @@ from app.crud.attendance import (
     get_attendance as crud_get_attendance,
     update_attendance as crud_update_attendance,
 )
-from app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
+from app.auth.membership_deps import assert_is_coach_of_club, assert_is_member_of_club
 
 def _assert_session_in_club(db: Session, session_id: int, club_id: int) -> None:
     sess_club_id = get_session_club_id(db, session_id)   # ← nur Repository-Aufruf

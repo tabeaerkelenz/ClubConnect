@@ -5,7 +5,7 @@ from app.crud.attendance import list_attendances_by_session
 from app.db.database import get_db
 from app.db.models import User
 from app.auth.deps import get_current_user
-from app.auth.membership_asserts import assert_is_coach_of_club
+from app.auth.membership_deps import assert_is_coach_of_club
 from app.schemas.attendance import AttendanceRead, AttendanceCreate, AttendanceUpdate
 from app.services.attendance import (
     create_attendance_service,

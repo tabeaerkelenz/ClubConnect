@@ -23,7 +23,7 @@ from app.services.membership import (
     MembershipExistsError,
     LastCoachViolationError,
 )
-from app.auth.membership_asserts import (
+from app.auth.membership_deps import (
     assert_not_last_coach_excluding,
     assert_is_coach_of_club,
     assert_is_member_of_club,

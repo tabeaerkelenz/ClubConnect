@@ -29,8 +29,6 @@ def create_membership(
     """Create a new membership."""
     membership = Membership(club_id=club_id, user_id=user_id, role=role)
     db.add(membership)
-    db.commit()
-    db.refresh(membership)
     return membership
 
 

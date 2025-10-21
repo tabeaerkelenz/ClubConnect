@@ -60,7 +60,7 @@ def get_club_endpoint(club_id: int, db: Session = Depends(get_db)):
 def update_club_endpoint(
     club_id: int, payload: ClubUpdate, db: Session = Depends(get_db), me: User = Depends(get_current_active_user)
 ):
-    return update_club_service(db, me.id, club_id, payload)
+    return update_club_service(db, user=me, club_id=club_id, data=payload)
 
 
 # add dependency get current active user
@@ -69,4 +69,4 @@ def update_club_endpoint(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_club_endpoint(club_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_active_user)):
-    delete_club_service(db, me.id, club_id)
+    delete_club_service(db, me, club_id)

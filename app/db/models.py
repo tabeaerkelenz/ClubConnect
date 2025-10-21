@@ -28,6 +28,7 @@ class UserRole(enum.Enum):
 class MembershipRole(enum.Enum):
     member = "member"
     coach = "coach"
+    owner = "owner"
 
 
 class PlanType(enum.Enum):
@@ -148,6 +149,11 @@ class Club(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    country: Mapped[str] = mapped_column(String(4), nullable=True)    # ISO-3166-1 alpha-2 (e.g., "DE")
+    city: Mapped[str] = mapped_column(String(128), nullable=True)
+    sport: Mapped[str] = mapped_column(String(100), nullable=True)
+    founded_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     plans = relationship("Plan", back_populates="club", cascade="all, delete-orphan")
     memberships = relationship(
@@ -166,7 +172,7 @@ class Membership(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    role: Mapped[MembershipRole] = mapped_column(Enum(MembershipRole), nullable=False)
+    role: Mapped[MembershipRole] = mapped_column(Enum(MembershipRole, name="membershiprole"), nullable=False)
 
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="memberships", lazy="selectin")
     club: Mapped["Club"] = relationship("Club", back_populates="memberships")

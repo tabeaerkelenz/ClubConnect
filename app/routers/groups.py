@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
-from app.auth.membership_asserts import assert_is_coach_of_club, assert_is_member_of_club
+from app.auth.membership_deps import assert_is_coach_of_club, assert_is_member_of_club
 from app.db.database import get_db
 from app.db.models import User
 from app.schemas.group import GroupRead, GroupCreate

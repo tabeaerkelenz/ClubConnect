@@ -4,6 +4,15 @@ from sqlalchemy import select, func
 
 from app.db.models import Membership, MembershipRole
 
+def assert_can_manage_club(role: MembershipRole) -> None:
+    """
+    Raise 403 if the caller is not allowed to manage a club.
+    Adjust rule as you like (owner-only or owner/coach).
+    """
+    allowed = {MembershipRole.owner}  # or {MembershipRole.owner, MembershipRole.coach}
+    if role not in allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to manage this club")
+
 
 def assert_is_member_of_club(db: Session, user_id: int, club_id: int) -> Membership:
     """
