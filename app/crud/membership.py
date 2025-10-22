@@ -3,6 +3,13 @@ from sqlalchemy import select, func
 
 from app.db.models import Membership, MembershipRole
 
+def membership_not_exists(db: Session, user_id: int, club_id: int):
+    exist = db.execute(
+        select(Membership.id).where(Membership.club_id == club_id, Membership.user_id == user_id)
+    ).scalar_one_or_none()
+    if exist:
+        return False
+    return True
 
 def get_membership_by_id(db, membership_id):
     """Get membership by its ID."""
@@ -29,6 +36,7 @@ def create_membership(
     """Create a new membership."""
     membership = Membership(club_id=club_id, user_id=user_id, role=role)
     db.add(membership)
+    db.flush()
     return membership
 
 
@@ -53,11 +61,9 @@ def get_memberships_club(db: Session, club_id: int) -> Membership:
     return db.execute(stmt).scalars().all()
 
 
-def delete_membership(db: Session, club_id: int, membership_id: int) -> None:
-    """Delete a membership by its ID."""
-    membership = db.get(Membership, membership_id)
+def delete_membership(db: Session, *, membership: Membership) -> None:
     db.delete(membership)
-    db.commit()
+    db.flush()
 
 
 def update_membership_role(

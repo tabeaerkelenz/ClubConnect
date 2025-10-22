@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
-from app.auth.membership_deps import assert_is_coach_of_club, assert_can_manage_club
+from app.auth.membership_deps import assert_is_coach_of_club, assert_is_owner_of_club
 from app.crud import club as crud
 from app.crud.club import get_clubs_by_user, create_club, add_membership
 from app.crud.membership import get_membership
@@ -49,7 +49,7 @@ def update_club_service(db, user, club_id: int, data: ClubUpdate):
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
-    assert_can_manage_club(membership.role)
+    assert_is_owner_of_club(membership.role)
 
     club = crud.get_club(db, club_id)
     if not club:
@@ -66,7 +66,7 @@ def delete_club_service(db, user, club_id: int):
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
-    assert_can_manage_club(membership.role)  # raises 403 if not
+    assert_is_owner_of_club(membership.role)  # raises 403 if not
     club = crud.get_club(db, club_id)
     if not club:
         raise HTTPException(status_code=404, detail="Club not found")

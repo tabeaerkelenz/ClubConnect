@@ -1,59 +1,64 @@
+from typing import Iterable
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from app.db.models import Membership, MembershipRole
 
-def assert_can_manage_club(role: MembershipRole) -> None:
-    """
-    Raise 403 if the caller is not allowed to manage a club.
-    Adjust rule as you like (owner-only or owner/coach).
-    """
-    allowed = {MembershipRole.owner}  # or {MembershipRole.owner, MembershipRole.coach}
-    if role not in allowed:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to manage this club")
-
-
-def assert_is_member_of_club(db: Session, user_id: int, club_id: int) -> Membership:
-    """
-    Check if the user is a member of the club.
-    Raises 403 if not a member.
-    Returns the Membership object if a member.
-    """
-    member = db.execute(
+def _get_membership(db: Session, user_id: int, club_id: int) -> Membership | None:
+    return db.execute(
         select(Membership).where(
-            # fix Membership.user == user.id to Membership.user == user_id
             Membership.user_id == user_id,
             Membership.club_id == club_id,
         )
     ).scalar_one_or_none()
-    if not member:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this club"
-        )
+
+def assert_has_any_role_of_club(
+    db: Session,
+    user_id: int,
+    club_id: int,
+    allowed_roles: Iterable[MembershipRole],
+    *,
+    detail: str = "Insufficient permissions for this club",
+) -> Membership:
+    """
+    Checks for membership returns 403 if not a member of the club.
+    """
+    member = _get_membership(db, user_id, club_id)
+    if not member or member.role not in set(allowed_roles):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
     return member
 
+
+
+def assert_is_member_of_club(db: Session, user_id: int, club_id: int) -> Membership:
+    return assert_has_any_role_of_club(
+        db, user_id, club_id,
+        allowed_roles=(MembershipRole.member, MembershipRole.coach, MembershipRole.owner),
+        detail="You are not a member of this club",
+    )
 
 def assert_is_coach_of_club(db: Session, user_id: int, club_id: int) -> Membership:
-    """
-    Check if the user is a coach of the club.
-    Raises 403 if not a coach.
-    :param db: Session
-    :param user_id: user id
-    :param club_id: club id
-    :return: membership object
-    """
-    member = db.execute(
-        select(Membership).where(
-            Membership.user_id == user_id, Membership.club_id == club_id
-        )
-    ).scalar_one_or_none()
-    if not member or member.role != MembershipRole.coach:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Coach role required for this club",
-        )
-    return member
+    return assert_has_any_role_of_club(
+        db, user_id, club_id,
+        allowed_roles=(MembershipRole.coach,),   # nur Coach
+        detail="Coach role required for this club",
+    )
+
+def assert_is_owner_of_club(db: Session, user_id: int, club_id: int) -> Membership:
+    return assert_has_any_role_of_club(
+        db, user_id, club_id,
+        allowed_roles=(MembershipRole.owner,),   # nur Owner
+        detail="Owner role required for this club",
+    )
+
+def assert_is_coach_or_owner_of_club(db: Session, user_id: int, club_id: int) -> Membership:
+    return assert_has_any_role_of_club(
+        db, user_id, club_id,
+        allowed_roles=(MembershipRole.coach, MembershipRole.owner),  # Coach ODER Owner
+        detail="Coach or Owner role required for this club",
+    )
 
 
 def assert_not_last_coach(db: Session, club_id: int) -> None:
@@ -76,29 +81,14 @@ def assert_not_last_coach(db: Session, club_id: int) -> None:
             status_code=400, detail="Cannot remove the last coach of the club"
         )
 
-
-def assert_not_last_coach_excluding(
-    db: Session, *, club_id: int, excluding_user_id: int
-) -> None:
-    """
-    Check if there is more than one coach in the club, excluding a specific user.
-    Raises 400 if there is only one coach left after excluding the specified user.
-    :param db: Session
-    :param club_id: club id
-    :param excluding_user_id: user id to exclude from the count
-    :return: None
-    """
-    remaining = db.scalar(
+def count_coach_owner(db, club_id: int, exclude_user_id: int) -> int:
+    stmt = (
         select(func.count())
         .select_from(Membership)
         .where(
             Membership.club_id == club_id,
-            Membership.role == MembershipRole.coach,
-            Membership.user_id != excluding_user_id,  # Ziel ausschließen
+            Membership.role.in_([MembershipRole.coach, MembershipRole.owner]),  # <- include owner
+            Membership.user_id != exclude_user_id,
         )
     )
-    if remaining == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot remove the last coach of the club",
-        )
+    return db.scalar(stmt) or 0

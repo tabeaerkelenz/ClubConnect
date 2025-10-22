@@ -18,16 +18,13 @@ from app.services.membership import (
     update_membership_role_service,
     delete_membership_service,
     get_memberships_user_service,
-    UserNotFoundError,
-    MembershipNotFoundError,
-    MembershipExistsError,
-    LastCoachViolationError,
+
 )
 from app.auth.membership_deps import (
-    assert_not_last_coach_excluding,
     assert_is_coach_of_club,
-    assert_is_member_of_club,
+    assert_is_member_of_club, assert_is_owner_of_club, assert_is_coach_or_owner_of_club, count_coach_owner,
 )
+from app.exceptions.membership import UserNotFoundError, MembershipNotFoundError, LastCoachViolationError, MembershipExistsError
 
 # Club view (list members of a club)
 clubs_memberships_router = APIRouter(
@@ -80,7 +77,7 @@ def my_memberships(db: Session = db_dep, me=me_dep) -> list[MembershipRead]:
 def add_membership(
     club_id: int, payload: MembershipCreate, db: Session = db_dep, me: User = me_dep
 ) -> MembershipRead:
-    assert_is_coach_of_club(db, user_id=me.id, club_id=club_id)
+    assert_is_coach_or_owner_of_club(db, user_id=me.id, club_id=club_id)
     try:
         membership = create_membership_service(
             db, club_id=club_id, email=payload.email, role=payload.role
@@ -111,7 +108,7 @@ def change_role(
     db: Session = db_dep,
     me: User = me_dep,
 ):
-    assert_is_coach_of_club(db, user_id=me.id, club_id=club_id)
+    assert_is_coach_or_owner_of_club(db, user_id=me.id, club_id=club_id)
     try:
         membership = update_membership_role_service(
             db, club_id=club_id, membership_id=membership_id, new_role=payload.role
@@ -125,16 +122,18 @@ def change_role(
 def remove_membership(
     club_id: int, membership_id: int, db: Session = db_dep, me: User = me_dep
 ):
-    # load target to decide permission
+    # load to decide permission
     target = db.get(Membership, membership_id)
     if not target or target.club_id != club_id:
         raise HTTPException(404, "Membership not found for this club")
 
     if target.user_id != me.id:
-        assert_is_coach_of_club(db, user=me, club_id=club_id)
+        # require coach OR owner for deleting others
+        assert_is_coach_or_owner_of_club(db, user_id=me.id, club_id=club_id)
 
     try:
-        delete_membership_service(db, membership_id=membership_id, club_id=club_id)
+        # service will do the last-coach check about the **target**, not the actor
+        delete_membership_service(db, club_id=club_id, membership_id=membership_id)
     except Exception as e:
         _map_crud_errors(e)
 

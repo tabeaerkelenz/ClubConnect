@@ -14,6 +14,7 @@ def client():
 
 @pytest.fixture
 def auth_headers():
+    """Return a function that makes auth headers for a given token."""
     def _mk(token: str) -> dict[str, str]:
         return {"Authorization": f"Bearer {token}"}
     return _mk
@@ -64,3 +65,16 @@ def club_owned_by_someone_else(client, owner_token, auth_headers):
     resp = client.post("/clubs", headers=auth_headers(owner_token), json=payload)
     assert resp.status_code in (200, 201), resp.text
     return resp.json()["id"]
+
+@pytest.fixture
+def membership_factory(client, auth_headers):
+    """takes an existing email and club_id and adds that user as default role member to that club."""
+    def _make(token: str, club_id: int, *, member_email: str, role: str = "member"):
+        payload = {"email": member_email, "role": role}
+        resp = client.post(
+            f"/clubs/{club_id}/memberships",
+            headers=auth_headers(token),
+            json=payload,
+        )
+        return resp
+    return _make
