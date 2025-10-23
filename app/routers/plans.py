@@ -71,13 +71,16 @@ def create_plan_ep(
 def get_plan_by_id_ep(
     club_id: int, plan_id: int, db: Session = db_dep, me: User = me_dep
 ) -> PlanRead:
-    plan = get_plan_service(db, plan_id=plan_id, club_id=club_id, me=me)
-    if not plan:
-        raise PlanNotFoundError("Plan not found")
+    try:
+        plan = get_plan_service(db, plan_id=plan_id, club_id=club_id, me=me)
+        if not plan:
+            raise PlanNotFoundError()
+    except Exception as e:
+        _map_crud_errors(e)
     return PlanRead.model_validate(plan)
 
 
-@router.patch("/{plan_id}", response_model=PlanUpdate)
+@router.patch("/{plan_id}", response_model=PlanRead)
 def update_plan_by_id_ep(
     plan_id: int,
     club_id: int,
