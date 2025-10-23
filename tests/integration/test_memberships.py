@@ -1,6 +1,3 @@
-import uuid
-import pytest
-
 from tests.integration.conftest import _rand_email
 from tests.integration.helpers_auth import register_user, login_and_get_token
 
@@ -8,7 +5,7 @@ from tests.integration.helpers_auth import register_user, login_and_get_token
 # ---------- LIST ----------
 def test_list_memberships_requires_membership(client, auth_headers, owner_token, other_token, make_club_for_user):
     club_id = make_club_for_user(owner_token)
-    # other_token ist nicht Member dieses Clubs → 403
+    # other_token is not member of club → 403
     resp = client.get(f"/clubs/{club_id}/memberships", headers=auth_headers(other_token))
     assert resp.status_code == 403, resp.text
 
@@ -17,7 +14,7 @@ def test_list_memberships_happy_path(client, auth_headers, owner_token, make_clu
     resp = client.get(f"/clubs/{club_id}/memberships", headers=auth_headers(owner_token))
     assert resp.status_code == 200, resp.text
     rows = resp.json()
-    # Club-Creator sollte als Coach/Owner Mitglied sein (je nach Implementierung mind. 1 Eintrag)
+    # Club-Creator should be coach or owner
     assert isinstance(rows, list)
     assert len(rows) >= 1
     assert all("id" in r and "role" in r and "club_id" in r for r in rows)
@@ -25,7 +22,7 @@ def test_list_memberships_happy_path(client, auth_headers, owner_token, make_clu
 
 # ---------- /memberships/mine ----------
 def test_my_memberships_returns_all(client, auth_headers, owner_token, other_token, make_club_for_user):
-    # owner ist in zwei Clubs Mitglied; /memberships/mine sollte beide liefern
+    # owner is member of two clubs
     club_a = make_club_for_user(owner_token)
     club_b = make_club_for_user(owner_token)
     resp = client.get("/memberships/mine", headers=auth_headers(owner_token))
