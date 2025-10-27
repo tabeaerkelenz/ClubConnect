@@ -1,5 +1,5 @@
 from tests.integration.conftest import _rand_email
-from tests.integration.helpers_auth import register_user, login_and_get_token
+from tests.helpers_auth import register_user
 
 
 # ---------- LIST ----------
