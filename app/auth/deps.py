@@ -4,9 +4,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
 from app.auth.jwt_utils import decode_token
-from app.crud.user import get_user_by_email
+from app.db.deps import get_db
 from app.db.models import UserRole, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")

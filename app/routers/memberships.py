@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
-from app.db.database import get_db
+from app.db.deps import get_db
 from app.db.models import User, MembershipRole, Membership
 from app.schemas.membership import (
     MembershipRead,
