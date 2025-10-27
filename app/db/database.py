@@ -1,55 +1,33 @@
-import os
-from pathlib import Path
+from typing import Iterator, Optional
 
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 
-# load dotenv
-# -> .../ClubConnect (inner)
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-ENV_PATH = PROJECT_DIR / ".env"
-load_dotenv(ENV_PATH)
+def build_engine(url: str | None = None):
+    # Only import settings if we actually need the default
+    if url is None:
+        from app.core.config import settings  # lazy import!
+        url = settings.DATABASE_URL
 
-# load from .env
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError(
-        f"DATABASE_URL is not set. Create a .env and export DATABASE_URL. Tried: {ENV_PATH}"
-    )
+    if url.startswith("sqlite"):
+        engine = create_engine(
+            url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool if url.endswith(":memory:") else None,
+        )
+        @event.listens_for(engine, "connect")
+        def _fk_on(dbapi_conn, _):
+            try:
+                dbapi_conn.execute("PRAGMA foreign_keys=ON;")
+            except Exception:
+                pass
+        return engine
 
-# Create engine
-engine = create_engine(
-    DATABASE_URL,
-    echo=True,  # set to False later
-    pool_pre_ping=True,  # avoids stale connections
-    future=True,  # 2.0 style
-)
-
-# set UTC time stamps in Postgres
-
-
-@event.listens_for(engine, "connect")
-def set_utc(dbapi_connection, _):
-    module = getattr(dbapi_connection, "__class__", type(dbapi_connection)).__module__
-    if not (module.startswith("psycopg2") or module.startswith("psycopg")):
-        return
-    with dbapi_connection.cursor() as cur:
-        cur.execute("SET TIME ZONE 'UTC'")
+    return create_engine(url, pool_pre_ping=True)
 
 
-# SessionLocal will be used to talk to DB
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def build_session_maker(url: Optional[str] = None):
+    engine = build_engine(url)
+    return sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
-# Base class for models.py
-Base = declarative_base()
-
-# DB session dependency
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

@@ -14,7 +14,9 @@ from sqlalchemy import (
     text, func, CheckConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from .database import Base  # import Base from database.py
+
+from .base import TimestampMixin, Base
+
 
 # –––––––––– Enums ––––––––––
 
@@ -56,24 +58,6 @@ class AttendanceStatus(enum.Enum):
     excused = "excused"
     absent = "absent"
     late = "late"
-
-
-# –––––––––– Mixins –––––––––––
-
-
-class TimestampMixin:
-    created_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-
 
 # –––––––––– Models –––––––––––
 
