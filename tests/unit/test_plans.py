@@ -1,6 +1,4 @@
 import uuid
-
-from tests.integration.conftest import _mk_plan_payload, _self_join, _rand_plan
 from tests.helpers_auth import login_and_get_token, register_user
 
 # ---------- tests ----------
@@ -69,7 +67,7 @@ def test_update_plan_by_coach_ok(client, auth_headers, owner_token, make_club_fo
 def test_update_plan_forbidden_for_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory):
     club_id = make_club_for_user(owner_token)
     created = plan_factory(owner_token, club_id)
-    _self_join(client, auth_headers, other_token, club_id)
+    self_join(client, auth_headers, other_token, club_id)
 
     patch = {"title": _rand_plan("Updated")}  # adjust to your PlanUpdate
     r = client.patch(f"/clubs/{club_id}/plans/{created['id']}", headers=auth_headers(other_token), json=patch)
@@ -107,7 +105,7 @@ def test_delete_plan_by_owner_ok(client, auth_headers, owner_token, make_club_fo
 def test_delete_plan_forbidden_for_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory):
     club_id = make_club_for_user(owner_token)
     created = plan_factory(owner_token, club_id)
-    _self_join(client, auth_headers, other_token, club_id)
+    self_join(client, auth_headers, other_token, club_id)
 
     r = client.delete(f"/clubs/{club_id}/plans/{created['id']}", headers=auth_headers(other_token))
     assert r.status_code in (403, 204), r.text  # expect 403 if service enforces coach-only deletion

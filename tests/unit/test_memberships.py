@@ -1,4 +1,3 @@
-from tests.integration.conftest import _rand_email
 from tests.helpers_auth import register_user
 
 
@@ -34,7 +33,7 @@ def test_my_memberships_returns_all(client, auth_headers, owner_token, other_tok
 # ---------- POST add_membership ----------
 def test_add_membership_happy_path(client, auth_headers, owner_token, make_club_for_user, membership_factory):
     club_id = make_club_for_user(owner_token)
-    email = _rand_email("member")
+    email = rand_email("member")
     register_user(client, email, "pw123456")
     resp = membership_factory(owner_token, club_id, member_email=email, role="member")
     assert resp.status_code in (200, 201), resp.text
@@ -49,7 +48,7 @@ def test_add_membership_unknown_email_404(client, auth_headers, owner_token, mak
 
 def test_add_membership_conflict_409(client, auth_headers, owner_token, make_club_for_user, membership_factory):
     club_id = make_club_for_user(owner_token)
-    email = _rand_email("member")
+    email = rand_email("member")
     register_user(client, email, "pw123456")
     # first add
     first = membership_factory(owner_token, club_id, member_email=email, role="member")
@@ -61,7 +60,7 @@ def test_add_membership_conflict_409(client, auth_headers, owner_token, make_clu
 def test_add_membership_requires_coach_403(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory):
     club_id = make_club_for_user(owner_token)
     # other_token is not coach
-    email = _rand_email("member")
+    email = rand_email("member")
     register_user(client, email, "pw123456")
     resp = membership_factory(other_token, club_id, member_email=email, role="member")
     assert resp.status_code == 403, resp.text
@@ -91,7 +90,7 @@ def test_self_join_conflict_if_already_member(client, auth_headers, owner_token,
 def test_change_role_to_coach_by_coach(client, auth_headers, owner_token, make_club_for_user, membership_factory):
     club_id = make_club_for_user(owner_token)
     # create member
-    email = _rand_email("member")
+    email = rand_email("member")
     register_user(client, email, "pw123456")
     created = membership_factory(owner_token, club_id, member_email=email, role="member").json()
     membership_id = created["id"]
@@ -109,7 +108,7 @@ def test_change_role_to_coach_by_coach(client, auth_headers, owner_token, make_c
 def test_change_role_requires_coach_403(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory):
     club_id = make_club_for_user(owner_token)
     # owner adds user a
-    email = _rand_email("member")
+    email = rand_email("member")
     register_user(client, email, "pw123456")
     created = membership_factory(owner_token, club_id, member_email=email, role="member").json()
     membership_id = created["id"]
@@ -161,7 +160,7 @@ def test_noncoach_cannot_remove_other_member(client, auth_headers, owner_token, 
     j = client.post(f"/clubs/{club_id}/memberships/join", headers=auth_headers(other_token))
     assert j.status_code in (200, 201), j.text
 
-    email_b = _rand_email("memberb")
+    email_b = rand_email("memberb")
     register_user(client, email_b, "pw123456")
     created_b = membership_factory(owner_token, club_id, member_email=email_b, role="member").json()
 

@@ -3,20 +3,18 @@ from tests.helpers_auth import register_user, login_and_get_token, auth_headers
 
 PASSWORD1 = "pw123456"
 
-def _rand_email() -> str:
-    return f"{uuid.uuid4().hex[:8]}@example.com"
 
 # ---------- AUTH: REGISTER ----------
 
 def test_register_returns_token_201(client):
-    email = _rand_email()
+    email = rand_email()
     r = register_user(client, email, PASSWORD1, name="Alice")
     assert r.status_code == 201, r.text
     body = r.json()
     assert "access_token" in body and body["token_type"] == "bearer"
 
 def test_register_duplicate_email_409(client):
-    email = _rand_email()
+    email = rand_email()
     r1 = register_user(client, email, PASSWORD1, name="Bob")
     assert r1.status_code == 201
     r2 = register_user(client, email, "pw678900", name="Bobby")
@@ -25,7 +23,7 @@ def test_register_duplicate_email_409(client):
 # ---------- AUTH: LOGIN ----------
 
 def test_login_success_and_get_me(client):
-    email = _rand_email()
+    email = rand_email()
     register_user(client, email, PASSWORD1, name="Cara")
     token = login_and_get_token(client, email, PASSWORD1)
     me = client.get("/users/me", headers=auth_headers(token))
@@ -33,7 +31,7 @@ def test_login_success_and_get_me(client):
     assert me.json()["email"] == email
 
 def test_login_wrong_password_401(client):
-    email = _rand_email()
+    email = rand_email()
     register_user(client, email, PASSWORD1)
     r = client.post("/auth/login", data={"username": email, "password": "wrong"})
     assert r.status_code == 401, r.text
@@ -45,13 +43,13 @@ def test_me_requires_token_401(client):
     assert r.status_code in (401, 403), r.text
 
 def test_update_me_allows_name_and_email(client):
-    email = _rand_email()
+    email = rand_email()
     register_user(client, email, PASSWORD1, name="Old Name")
     token = login_and_get_token(client, email, PASSWORD1)
     hdrs = auth_headers(token)
 
     # change name + email, expect normalization (lowercase)
-    new_email = _rand_email().upper()
+    new_email = rand_email().upper()
     r = client.patch("/users/me", headers=hdrs, json={"name": "New Name", "email": new_email})
     assert r.status_code == 200, r.text
     body = r.json()
@@ -60,12 +58,12 @@ def test_update_me_allows_name_and_email(client):
 
 def test_update_me_rejects_taken_email_409(client):
     # user A
-    a_email = _rand_email()
+    a_email = rand_email("user_a")
     register_user(client, a_email, PASSWORD1)
     a_token = login_and_get_token(client, a_email, PASSWORD1)
 
     # user B
-    b_email = _rand_email()
+    b_email = rand_email("user_b")
     register_user(client, b_email, PASSWORD1)
     b_token = login_and_get_token(client, b_email, PASSWORD1)
 
@@ -75,7 +73,7 @@ def test_update_me_rejects_taken_email_409(client):
 
 
 def test_change_password_flow(client):
-    email = _rand_email()
+    email = rand_email()
     register_user(client, email, "oldpw123")
     token = login_and_get_token(client, email, "oldpw123")
     hdrs = auth_headers(token)
