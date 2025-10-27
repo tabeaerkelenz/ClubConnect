@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
+from app.db.deps import get_db
 from app.db.models import Membership, MembershipRole, Club, User
 from app.schemas.club import ClubCreate, ClubUpdate, ClubRead
 from app.crud.club import create_club, get_club, list_clubs, update_club, delete_club

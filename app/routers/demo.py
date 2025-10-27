@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.db.database import get_db
+from app.db.deps import get_db
 from app.schemas.exercise import ExerciseCreate
 
 from app.schemas.session import SessionCreate

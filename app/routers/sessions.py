@@ -2,14 +2,14 @@ from typing import List
 from sqlalchemy.orm import Session as SASession
 from fastapi import APIRouter, Depends, Response, status, HTTPException
 
+from app.db.deps import get_db
 from app.exceptions.session import NotClubMember, NotCoach, Conflict, InvalidTimeRange, SessionNotFound
 from app.schemas.session import SessionRead, SessionCreate, SessionUpdate
 from app.auth.membership_deps import (
     assert_is_member_of_club,
-    assert_is_coach_of_club,
+    assert_is_coach_of_club, assert_is_coach_or_owner_of_club,
 )
 from app.auth.deps import get_current_user
-from app.db.database import get_db  # or wherever your get_db lives
 
 from app.services.session import (
     list_sessions_service,
@@ -78,7 +78,7 @@ def create_session_ep(
     me=Depends(get_current_user),
 ):
     # Guards: coach can write
-    assert_is_coach_of_club(db, me.id, club_id)
+    assert_is_coach_or_owner_of_club(db, me.id, club_id)
     try:
         return create_session_service(db, club_id, plan_id, me, data)
     except DOMAIN_ERRORS as e:

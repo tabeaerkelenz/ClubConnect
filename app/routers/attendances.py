@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.crud.attendance import list_attendances_by_session
-from app.db.database import get_db
+from app.db.deps import get_db
 from app.db.models import User
 from app.auth.deps import get_current_user
 from app.auth.membership_deps import assert_is_coach_of_club
