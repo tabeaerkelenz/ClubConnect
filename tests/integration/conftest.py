@@ -1,80 +1,54 @@
-import uuid
-
+import os
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import sessionmaker, Session
+
+from app.db.deps import get_db
+
+# 1) Point to a *real* Postgres test DB (container, CI var, etc.)
+PG_URL = os.environ.get("DATABASE_URL", "")
+if not PG_URL or PG_URL.startswith("sqlite"):
+    pytest.skip(
+        "Skipping integration tests: Postgres DATABASE_URL not set.",
+        allow_module_level=True,
+    )
+
 from app.main import app
-from tests.integration.helpers_auth import register_user, login_and_get_token
+from app.db.database import build_session_maker
 
-
-# ---------------- Fixtures ----------------
+# 2) Migrate to head (once per session)
+@pytest.fixture(scope="session", autouse=True)
+def _migrate_db():
+    # Run Alembic upgrade head here, or ensure CI did it.
+    # Example (pseudo):
+    # from alembic.config import Config
+    # from alembic import command
+    # cfg = Config("alembic.ini")
+    # command.upgrade(cfg, "head")
+    pass
 
 @pytest.fixture(scope="session")
-def client():
-    return TestClient(app)
+def _pg_sessionmaker() -> sessionmaker:
+    return build_session_maker(PG_URL)
 
 @pytest.fixture
-def auth_headers():
-    """Return a function that makes auth headers for a given token."""
-    def _mk(token: str) -> dict[str, str]:
-        return {"Authorization": f"Bearer {token}"}
-    return _mk
+def db(_pg_sessionmaker) -> Session:
+    session = _pg_sessionmaker()
+    tx = session.begin()
+    try:
+        yield session
+    finally:
+        tx.rollback()
+        session.close()
 
-def _rand_email(prefix: str) -> str:
-    return f"{prefix}_{uuid.uuid4().hex[:6]}@example.com"
-
-@pytest.fixture
-def auth_token(client):
-    email = _rand_email("me")
-    register_user(client, email, "pw123456")
-    return login_and_get_token(client, email, "pw123456")
-
-@pytest.fixture
-def owner_token(client):
-    email = _rand_email("owner")
-    register_user(client, email, "pw123456")
-    return login_and_get_token(client, email, "pw123456")
-
-@pytest.fixture
-def other_token(client):
-    email = _rand_email("other")
-    register_user(client, email, "pw123456")
-    return login_and_get_token(client, email, "pw123456")
-
-@pytest.fixture
-def make_club_for_user(client, auth_headers):
-    """Create a club via API using the caller's token. Return the new club id."""
-    def _make(token, **overrides):
-        payload = {
-            "name": "testname",
-            "country": "DE",
-            "city": "Berlin",
-            "sport": "football",
-            "founded_year": 2010,
-            "description": "Test club",
-            **overrides,
-        }
-        resp = client.post("/clubs", headers=auth_headers(token), json=payload)
-        assert resp.status_code in (201, 200), resp.text
-        return resp.json()["id"]
-    return _make
-
-@pytest.fixture
-def club_owned_by_someone_else(client, owner_token, auth_headers):
-    """Create a club owned by *owner_token* and return its id."""
-    payload = {"name": f"club_{uuid.uuid4().hex[:6]}"}  # add fields if your API requires them
-    resp = client.post("/clubs", headers=auth_headers(owner_token), json=payload)
-    assert resp.status_code in (200, 201), resp.text
-    return resp.json()["id"]
-
-@pytest.fixture
-def membership_factory(client, auth_headers):
-    """takes an existing email and club_id and adds that user as default role member to that club."""
-    def _make(token: str, club_id: int, *, member_email: str, role: str = "member"):
-        payload = {"email": member_email, "role": role}
-        resp = client.post(
-            f"/clubs/{club_id}/memberships",
-            headers=auth_headers(token),
-            json=payload,
-        )
-        return resp
-    return _make
+@pytest.fixture(scope="function")
+def client(db: Session):
+    def _override_get_db():
+        try:
+            yield db
+        finally:
+            pass
+    app.dependency_overrides[get_db] = _override_get_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
