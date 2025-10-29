@@ -31,7 +31,7 @@ def test_my_memberships_returns_all(client, auth_headers, owner_token, other_tok
 
 
 # ---------- POST add_membership ----------
-def test_add_membership_happy_path(client, auth_headers, owner_token, make_club_for_user, membership_factory):
+def test_add_membership_happy_path(client, auth_headers, owner_token, make_club_for_user, membership_factory, rand_email):
     club_id = make_club_for_user(owner_token)
     email = rand_email("member")
     register_user(client, email, "pw123456")
@@ -46,7 +46,7 @@ def test_add_membership_unknown_email_404(client, auth_headers, owner_token, mak
     resp = membership_factory(owner_token, club_id, member_email="does-not-exist@example.com", role="member")
     assert resp.status_code in (400, 404), resp.text  # dein _map_crud_errors -> 404 empfohlen
 
-def test_add_membership_conflict_409(client, auth_headers, owner_token, make_club_for_user, membership_factory):
+def test_add_membership_conflict_409(client, auth_headers, owner_token, make_club_for_user, membership_factory, rand_email):
     club_id = make_club_for_user(owner_token)
     email = rand_email("member")
     register_user(client, email, "pw123456")
@@ -57,7 +57,7 @@ def test_add_membership_conflict_409(client, auth_headers, owner_token, make_clu
     second = membership_factory(owner_token, club_id, member_email=email, role="member")
     assert second.status_code == 409, second.text
 
-def test_add_membership_requires_coach_403(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory):
+def test_add_membership_requires_coach_403(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory, rand_email):
     club_id = make_club_for_user(owner_token)
     # other_token is not coach
     email = rand_email("member")
@@ -87,7 +87,7 @@ def test_self_join_conflict_if_already_member(client, auth_headers, owner_token,
 
 
 # ---------- PATCH /{membership_id}/role ----------
-def test_change_role_to_coach_by_coach(client, auth_headers, owner_token, make_club_for_user, membership_factory):
+def test_change_role_to_coach_by_coach(client, auth_headers, owner_token, make_club_for_user, membership_factory, rand_email):
     club_id = make_club_for_user(owner_token)
     # create member
     email = rand_email("member")
@@ -105,7 +105,7 @@ def test_change_role_to_coach_by_coach(client, auth_headers, owner_token, make_c
     assert resp.status_code == 200, resp.text
     assert resp.json()["role"] == "coach"
 
-def test_change_role_requires_coach_403(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory):
+def test_change_role_requires_coach_403(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory, rand_email):
     club_id = make_club_for_user(owner_token)
     # owner adds user a
     email = rand_email("member")
@@ -131,7 +131,6 @@ def test_change_role_404_for_unknown_membership(client, auth_headers, owner_toke
     )
     assert resp.status_code == 404 or resp.status_code == 400, resp.text  # je nach Service
 
-
 # ---------- DELETE /{membership_id} ----------
 def _get_memberships(client, token, club_id, auth_headers):
     r = client.get(f"/clubs/{club_id}/memberships", headers=auth_headers(token))
@@ -153,7 +152,7 @@ def test_member_can_remove_self(client, auth_headers, owner_token, other_token, 
     members = _get_memberships(client, owner_token, club_id, auth_headers)
     assert all(m["id"] != member_id for m in members)
 
-def test_noncoach_cannot_remove_other_member(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory):
+def test_noncoach_cannot_remove_other_member(client, auth_headers, owner_token, other_token, make_club_for_user, membership_factory, rand_email):
     club_id = make_club_for_user(owner_token)
 
     # A (other_token) joint self, B gets added
