@@ -49,7 +49,7 @@ def update_club_service(db, user, club_id: int, data: ClubUpdate):
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
-    assert_is_owner_of_club(membership.role)
+    assert_is_owner_of_club(db, user_id=user.id, club_id=club_id)  # raises 403 if not
 
     club = crud.get_club(db, club_id)
     if not club:
@@ -66,7 +66,7 @@ def delete_club_service(db, user, club_id: int):
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
-    assert_is_owner_of_club(membership.role)  # raises 403 if not
+    assert_is_owner_of_club(db, user.id, club_id)  # raises 403 if not
     club = crud.get_club(db, club_id)
     if not club:
         raise HTTPException(status_code=404, detail="Club not found")
