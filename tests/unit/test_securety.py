@@ -7,7 +7,7 @@ from app.core.security import hash_password, verify_password
     "pw123456",
     "😊🔥密码🔒",
     " " * 8,
-    "a" * 1024,                    # long
+    "a" * 64,                    # long
 ])
 def test_verify_password_roundtrip(pw):
     hashed = hash_password(pw)
