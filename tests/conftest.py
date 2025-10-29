@@ -172,7 +172,7 @@ def _rand_plan(prefix="plan"):
     return f"{prefix}_{_u.uuid4().hex[:6]}"
 
 @pytest.fixture
-def _mk_plan_payload(plan_type: PlanType | str | None = None):
+def _mk_plan_payload(_rand_plan, plan_type: PlanType | str | None = None):
     if plan_type is None:
         plan_type = getattr(PlanType, "training", list(PlanType)[0])
     if hasattr(plan_type, "value"):
