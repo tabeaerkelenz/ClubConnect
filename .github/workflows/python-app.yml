@@ -11,28 +11,45 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pip install pytest
-        export PYTHONPATH=app
-        pytest
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Install deps from the INNER project folder
+      - name: Install dependencies
+        working-directory: ClubConnect
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install flake8 pytest; fi
+
+      # Optional: show we are in the right place and the right file is seen
+      - name: Debug paths
+        working-directory: ClubConnect
+        run: |
+          pwd
+          ls -la
+          sed -n '1,120p' tests/unit/test_plans.py || true
+
+      # Lint ONLY the inner project
+      - name: Lint with flake8
+        working-directory: ClubConnect
+        run: |
+          # fail on syntax errors and undefined names (includes F821)
+          python -m flake8 . --count --select=E9,F63,F7,F82,F821 --show-source --statistics
+          # style metrics (non-failing)
+          python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      # Run tests from INNER folder; PYTHONPATH='.' so `app/` is importable
+      - name: Test with pytest
+        working-directory: ClubConnect
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m pytest -q
