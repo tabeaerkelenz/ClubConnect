@@ -5,14 +5,14 @@ PASSWORD1 = "pw123456"
 
 # ---------- AUTH: REGISTER ----------
 
-def test_register_returns_token_201(client):
+def test_register_returns_token_201(client, rand_email):
     email = rand_email()
     r = register_user(client, email, PASSWORD1, name="Alice")
     assert r.status_code == 201, r.text
     body = r.json()
     assert "access_token" in body and body["token_type"] == "bearer"
 
-def test_register_duplicate_email_409(client):
+def test_register_duplicate_email_409(client, rand_email):
     email = rand_email()
     r1 = register_user(client, email, PASSWORD1, name="Bob")
     assert r1.status_code == 201
@@ -21,7 +21,7 @@ def test_register_duplicate_email_409(client):
 
 # ---------- AUTH: LOGIN ----------
 
-def test_login_success_and_get_me(client):
+def test_login_success_and_get_me(client, rand_email):
     email = rand_email()
     register_user(client, email, PASSWORD1, name="Cara")
     token = login_and_get_token(client, email, PASSWORD1)
@@ -29,7 +29,7 @@ def test_login_success_and_get_me(client):
     assert me.status_code == 200, me.text
     assert me.json()["email"] == email
 
-def test_login_wrong_password_401(client):
+def test_login_wrong_password_401(client, rand_email):
     email = rand_email()
     register_user(client, email, PASSWORD1)
     r = client.post("/auth/login", data={"username": email, "password": "wrong"})
@@ -41,7 +41,7 @@ def test_me_requires_token_401(client):
     r = client.get("/users/me")
     assert r.status_code in (401, 403), r.text
 
-def test_update_me_allows_name_and_email(client):
+def test_update_me_allows_name_and_email(client, rand_email):
     email = rand_email()
     register_user(client, email, PASSWORD1, name="Old Name")
     token = login_and_get_token(client, email, PASSWORD1)
@@ -55,7 +55,7 @@ def test_update_me_allows_name_and_email(client):
     assert body["name"] == "New Name"
     assert body["email"] == new_email.lower()
 
-def test_update_me_rejects_taken_email_409(client):
+def test_update_me_rejects_taken_email_409(client, rand_email):
     # user A
     a_email = rand_email("user_a")
     register_user(client, a_email, PASSWORD1)
@@ -71,7 +71,7 @@ def test_update_me_rejects_taken_email_409(client):
     assert r.status_code == 409, r.text
 
 
-def test_change_password_flow(client):
+def test_change_password_flow(client, rand_email):
     email = rand_email()
     register_user(client, email, "oldpw123")
     token = login_and_get_token(client, email, "oldpw123")

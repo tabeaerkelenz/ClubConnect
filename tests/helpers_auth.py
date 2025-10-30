@@ -1,7 +1,7 @@
 from typing import Dict
 from fastapi.testclient import TestClient
 
-def register_user(client: TestClient, email: str, password: str, name: str = "Testy") -> Dict:
+def register_user(client: TestClient, email: str, password: str, name: str = "Testy"):
     r = client.post("/auth/register", json={"email": email, "password": password, "name": name})
     return r
 

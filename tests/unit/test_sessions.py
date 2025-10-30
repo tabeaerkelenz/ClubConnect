@@ -48,10 +48,10 @@ def test_create_session_forbidden_for_member_non_coach(client, auth_headers, own
     r = client.post(f"/clubs/{club_id}/plans/{plan['id']}/sessions", headers=auth_headers(other_token), json=mk_session_payload())
     assert r.status_code == 403, f"{r.status_code} -> {r.text}"
 
-def test_create_session_422_invalid_time_range(client, auth_headers, owner_token, make_club_for_user, plan_factory, _mk_session_payload_invalid_time):
+def test_create_session_422_invalid_time_range(client, auth_headers, owner_token, make_club_for_user, plan_factory, mk_session_payload_invalid_time):
     club_id = make_club_for_user(owner_token)
     plan = plan_factory(owner_token, club_id)
-    r = client.post(f"/clubs/{club_id}/plans/{plan['id']}/sessions", headers=auth_headers(owner_token), json=_mk_session_payload_invalid_time())
+    r = client.post(f"/clubs/{club_id}/plans/{plan['id']}/sessions", headers=auth_headers(owner_token), json=mk_session_payload_invalid_time())
     assert r.status_code == 422, f"{r.status_code} -> {r.text}"
 
 

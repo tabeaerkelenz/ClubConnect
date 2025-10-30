@@ -67,7 +67,7 @@ def test_add_membership_requires_coach_403(client, auth_headers, owner_token, ot
 
 
 # ---------- POST /join (self_join) ----------
-def test_self_join_happy_path(client, auth_headers, owner_token, other_token, make_club_for_user):
+def testself_join_happy_path(client, auth_headers, owner_token, other_token, make_club_for_user):
     club_id = make_club_for_user(owner_token)
     # other_token can join
     resp = client.post(f"/clubs/{club_id}/memberships/join", headers=auth_headers(other_token))
@@ -76,7 +76,7 @@ def test_self_join_happy_path(client, auth_headers, owner_token, other_token, ma
     assert body["club_id"] == club_id
     assert body["role"] == "member"
 
-def test_self_join_conflict_if_already_member(client, auth_headers, owner_token, other_token, make_club_for_user):
+def testself_join_conflict_if_already_member(client, auth_headers, owner_token, other_token, make_club_for_user):
     club_id = make_club_for_user(owner_token)
     # join 1
     r1 = client.post(f"/clubs/{club_id}/memberships/join", headers=auth_headers(other_token))
