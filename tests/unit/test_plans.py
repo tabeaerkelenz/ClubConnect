@@ -17,9 +17,9 @@ def test_list_plans_happy_path(client, auth_headers, owner_token, make_club_for_
     items = r.json()
     assert isinstance(items, list) and any(p["id"] == created["id"] for p in items)
 
-def test_create_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user):
+def test_create_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user, mk_plan_payload):
     club_id = make_club_for_user(owner_token)
-    payload = _mk_plan_payload()
+    payload = mk_plan_payload()
     r = client.post(f"/clubs/{club_id}/plans", headers=auth_headers(owner_token), json=payload)
     assert r.status_code in (200, 201), r.text
     body = r.json()
@@ -40,9 +40,9 @@ def test_get_plan_by_id_happy_path(client, auth_headers, owner_token, make_club_
     assert r.status_code == 200, r.text
     assert r.json()["id"] == created["id"]
 
-def test_update_plan_by_coach_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory):
+def test_update_plan_by_coach_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory, mk_plan_payload):
     club_id = make_club_for_user(owner_token)
-    created = plan_factory(owner_token, club_id, payload=_mk_plan_payload())
+    created = plan_factory(owner_token, club_id, payload=mk_plan_payload())
 
     # create a coach user and promote them in this club
     coach_email = f"coach_{uuid.uuid4().hex[:6]}@example.com"
@@ -64,21 +64,21 @@ def test_update_plan_by_coach_ok(client, auth_headers, owner_token, make_club_fo
     assert r.status_code == 200, f"{r.status_code} -> {r.text}"
 
 
-def test_update_plan_forbidden_for_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory):
+def test_update_plan_forbidden_for_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory, self_join, rand_plan):
     club_id = make_club_for_user(owner_token)
     created = plan_factory(owner_token, club_id)
     self_join(client, auth_headers, other_token, club_id)
 
-    patch = {"title": _rand_plan("Updated")}  # adjust to your PlanUpdate
+    patch = {"title": rand_plan("Updated")}  # adjust to your PlanUpdate
     r = client.patch(f"/clubs/{club_id}/plans/{created['id']}", headers=auth_headers(other_token), json=patch)
     # service likely raises NotCoachOfClubError → 403
     assert r.status_code in (403, 200), r.text
     # If 200 (members allowed), consider tightening service rules.
 
-def test_update_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory):
+def test_update_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory, rand_plan):
     club_id = make_club_for_user(owner_token)
     created = plan_factory(owner_token, club_id)
-    patch = {"title": _rand_plan("Updated")}  # adjust to your PlanUpdate schema
+    patch = {"title": rand_plan("Updated")}  # adjust to your PlanUpdate schema
     r = client.patch(f"/clubs/{club_id}/plans/{created['id']}", headers=auth_headers(owner_token), json=patch)
     assert r.status_code == 200, r.text
     body = r.json()
@@ -87,9 +87,9 @@ def test_update_plan_by_owner_ok(client, auth_headers, owner_token, make_club_fo
     if "title" in body and "title" in patch:
         assert body["title"] == patch["title"]
 
-def test_delete_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory):
+def test_delete_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory, mk_plan_payload):
     club_id = make_club_for_user(owner_token)
-    created = plan_factory(owner_token, club_id, payload=_mk_plan_payload())
+    created = plan_factory(owner_token, club_id, payload=mk_plan_payload())
 
     r = client.delete(
         f"/clubs/{club_id}/plans/{created['id']}",
@@ -102,7 +102,7 @@ def test_delete_plan_by_owner_ok(client, auth_headers, owner_token, make_club_fo
     assert r2.status_code in (404, 400), f"{r2.status_code} -> {r2.text}"
 
 
-def test_delete_plan_forbidden_for_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory):
+def test_delete_plan_forbidden_for_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory, self_join):
     club_id = make_club_for_user(owner_token)
     created = plan_factory(owner_token, club_id)
     self_join(client, auth_headers, other_token, club_id)
@@ -137,13 +137,13 @@ def test_list_assigned_plans_filter_role(client, auth_headers, owner_token, make
     assert isinstance(r.json(), list)
 
 
-def test_create_plan_requires_membership_403(client, auth_headers, owner_token, other_token, make_club_for_user):
+def test_create_plan_requires_membership_403(client, auth_headers, owner_token, other_token, make_club_for_user, mk_plan_payload):
     club_id = make_club_for_user(owner_token)
     # other_token is not a member
     r = client.post(
         f"/clubs/{club_id}/plans",
         headers=auth_headers(other_token),
-        json=_mk_plan_payload(),
+        json=mk_plan_payload(),
     )
     assert r.status_code == 403, f"{r.status_code} -> {r.text}"
 
