@@ -167,43 +167,50 @@ def self_join(client, auth_headers):
 
 # ---- Plans ----
 @pytest.fixture
-def _rand_plan(prefix="plan"):
-    import uuid as _u
-    return f"{prefix}_{_u.uuid4().hex[:6]}"
+def rand_plan():
+    def _make(prefix="plan"):
+        return f"{prefix}_{uuid.uuid4().hex[:6]}"
+    return _make
 
 @pytest.fixture
-def _mk_plan_payload(_rand_plan, plan_type: PlanType | str | None = None):
-    if plan_type is None:
-        plan_type = getattr(PlanType, "training", list(PlanType)[0])
-    if hasattr(plan_type, "value"):
-        plan_type = plan_type.value
-    return {
-        "name": _rand_plan("Plan"),
-        "description": "Test description long enough",
-        "plan_type": plan_type,
-    }
+def mk_plan_payload(rand_plan):
+    def _make(*, plan_type: PlanType | str | None = None, name: str | None = None, description: str = "Test description long enough"):
+        if plan_type is None:
+            plan_type = getattr(PlanType, "training", list(PlanType)[0])
+        if hasattr(plan_type, "value"):
+            plan_type = plan_type.value
+        return {
+            "name": name or rand_plan("Plan"),
+            "description": description,
+            "plan_type": plan_type,
+        }
+    return _make
+
 
 @pytest.fixture
-def plan_factory(client, auth_headers):
+def plan_factory(client, auth_headers, mk_plan_payload):
     def _make(token: str, club_id: int, payload: dict | None = None, plan_type: PlanType | str | None = None):
-        payload = payload or _mk_plan_payload(plan_type=plan_type)
+        payload = payload or mk_plan_payload(plan_type=plan_type)
         r = client.post(f"/clubs/{club_id}/plans", headers=auth_headers(token), json=payload)
         assert r.status_code in (200, 201), f"{r.status_code} -> {r.text} (payload={payload})"
         return r.json()
     return _make
 
 # ---- Sessions ----
-def _rand_session(prefix="sess"):
-    import uuid as _u
-    return f"{prefix}_{_u.uuid4().hex[:6]}"
+@pytest.fixture
+def rand_session():
+    def _make(prefix="sess"):
+        return f"{prefix}_{uuid.uuid4().hex[:6]}"
+    return _make
 
-def _iso(dt: datetime) -> str:
+def iso(dt: datetime) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 @pytest.fixture
-def _mk_session_payload(
+def mk_session_payload(rand_session):
+    def _make(
     *,
     name: str | None = None,
     description: str | None = "Test session",
@@ -211,23 +218,40 @@ def _mk_session_payload(
     duration_minutes: int = 90,
     location: str = "Pitch 1",
     note: str | None = None,
-) -> dict:
-    now = datetime.now(timezone.utc)
-    starts = now + timedelta(minutes=starts_in_minutes)
-    ends = starts + timedelta(minutes=duration_minutes)
-    return {
-        "name": name or _rand_session("Session"),
-        "description": description,
-        "starts_at": _iso(starts),
-        "ends_at": _iso(ends),
-        "location": location,
-        "note": note,
-    }
+    ) -> dict:
+        now = datetime.now(timezone.utc)
+        starts = now + timedelta(minutes=starts_in_minutes)
+        ends = starts + timedelta(minutes=duration_minutes)
+        return {
+            "name": name or rand_session("Session"),
+            "description": description,
+            "starts_at": iso(starts),
+            "ends_at": iso(ends),
+            "location": location,
+            "note": note,
+        }
+    return _make
 
 @pytest.fixture
-def session_factory(client, auth_headers):
+def mk_session_payload_invalid_time(rand_session):
+    def _make():
+        now = datetime.now(timezone.utc)
+        starts = now + timedelta(hours=2)
+        ends = now + timedelta(hours=1)
+        return {
+            "name": rand_session("Bad"),
+            "description": "Invalid time",
+            "starts_at": iso(starts),
+            "ends_at": iso(ends),
+            "location": "Pitch 1",
+            "note": "bring water",
+        }
+    return _make
+
+@pytest.fixture
+def session_factory(client, auth_headers, mk_session_payload):
     def _make(token: str, club_id: int, plan_id: int, payload: dict | None = None):
-        payload = payload or _mk_session_payload()
+        payload = payload or mk_session_payload()
         r = client.post(
             f"/clubs/{club_id}/plans/{plan_id}/sessions",
             headers=auth_headers(token),
