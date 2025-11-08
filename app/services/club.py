@@ -16,7 +16,7 @@ def require_owner(db: Session, *, club_id: int, user_id: int):
     m = get_membership(db, club_id=club_id, user_id=user_id)
     if not m:
         raise MembershipNotFoundError()
-    if m.role != MembershipRole.owner:
+    if m.role != MembershipRole.owner or m.role != MembershipRole.coach:
         raise PermissionDeniedError()
     return m
 

@@ -52,7 +52,7 @@ def _sqlite_sessionmaker():
         engine = s.get_bind()
         Base.metadata.drop_all(bind=engine)
 
-# tests/conftest.py
+# tests/utils.py
 @pytest.fixture
 def db(_sqlite_sessionmaker):
     session = _sqlite_sessionmaker()
