@@ -46,7 +46,8 @@ def list_clubs(
     stmt = select(Club)
 
     if q:
-        stmt = stmt.where(Club.name.ilike(f"%{q.strip()}%"))
+        stmt = stmt.where(Club.name.contains(q, autoescape=True))
+
     stmt = stmt.order_by(Club.name.asc()).offset(skip).limit(limit)
     return db.execute(stmt).scalars().all()
 

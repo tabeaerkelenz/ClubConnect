@@ -41,10 +41,10 @@ def test_create_session_by_coach_ok(client, auth_headers, owner_token, make_club
     r = client.post(f"/clubs/{club_id}/plans/{plan['id']}/sessions", headers=auth_headers(owner_token), json=payload)
     assert r.status_code in (200, 201), f"{r.status_code} -> {r.text}"
 
-def test_create_session_forbidden_for_member_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory, mk_session_payload):
+def test_create_session_forbidden_for_member_non_coach(client, auth_headers, owner_token, other_token, make_club_for_user, plan_factory, mk_session_payload, self_join):
     club_id = make_club_for_user(owner_token)
     plan = plan_factory(owner_token, club_id)
-    self_join(client, auth_headers, other_token, club_id)  # member, not coach
+    self_join(other_token, club_id)  # member, not coach
     r = client.post(f"/clubs/{club_id}/plans/{plan['id']}/sessions", headers=auth_headers(other_token), json=mk_session_payload())
     assert r.status_code == 403, f"{r.status_code} -> {r.text}"
 
@@ -78,7 +78,7 @@ def test_update_session_forbidden_for_member_non_coach(client, auth_headers, own
     club_id = make_club_for_user(owner_token)
     plan = plan_factory(owner_token, club_id)
     created = session_factory(owner_token, club_id, plan["id"])
-    self_join(client, auth_headers, other_token, club_id)
+    self_join(other_token, club_id)
     r = client.patch(
         f"/clubs/{club_id}/plans/{plan['id']}/sessions/{created['id']}",
         headers=auth_headers(other_token),
@@ -106,7 +106,7 @@ def test_delete_session_forbidden_for_member_non_coach(client, auth_headers, own
     club_id = make_club_for_user(owner_token)
     plan = plan_factory(owner_token, club_id)
     created = session_factory(owner_token, club_id, plan["id"])
-    self_join(client, auth_headers, other_token, club_id)
+    self_join(other_token, club_id)
     r = client.delete(
         f"/clubs/{club_id}/plans/{plan['id']}/sessions/{created['id']}",
         headers=auth_headers(other_token),

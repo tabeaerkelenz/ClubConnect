@@ -78,7 +78,7 @@ def test_update_plan_forbidden_for_non_coach(client, auth_headers, owner_token, 
 def test_update_plan_by_owner_ok(client, auth_headers, owner_token, make_club_for_user, plan_factory, rand_plan):
     club_id = make_club_for_user(owner_token)
     created = plan_factory(owner_token, club_id)
-    patch = {"title": rand_plan("Updated")}  # adjust to your PlanUpdate schema
+    patch = {"title": rand_plan("Updated")}
     r = client.patch(f"/clubs/{club_id}/plans/{created['id']}", headers=auth_headers(owner_token), json=patch)
     assert r.status_code == 200, r.text
     body = r.json()
