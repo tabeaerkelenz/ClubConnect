@@ -1,4 +1,4 @@
-from typing import Iterator, Optional
+from typing import Optional
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
@@ -27,7 +27,7 @@ def build_engine(url: str | None = None):
     return create_engine(url, pool_pre_ping=True)
 
 
-def build_session_maker(url: Optional[str] = None):
+def build_session_maker(url: Optional[str] = None) -> sessionmaker[Session]:
     engine = build_engine(url)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
