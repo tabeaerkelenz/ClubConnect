@@ -28,26 +28,22 @@ from tests.helpers_auth import register_user, login_and_get_token  # you already
 
 # ---- DB setup (SQLite :memory:) ----
 
-SQLITE_URL = "sqlite+pysqlite:///:memory:"
 
 @pytest.fixture(scope="session")
 def _sqlite_sessionmaker():
-    # One shared in-memory engine for the whole test session
-    SessionMaker = build_session_maker(SQLITE_URL)
-
     # Get the exact engine bound to this sessionmaker
     with SessionMaker() as s:
         engine = s.get_bind()
 
-        # Enable FK constraints in SQLite
-        @event.listens_for(engine, "connect")
-        def _fk_on(dbapi_conn, _):
-            try:
-                dbapi_conn.execute("PRAGMA foreign_keys=ON;")
-            except Exception:
-                pass
+    # Enable FK constraints in SQLite
+    @event.listens_for(engine, "connect")
+    def _fk_on(dbapi_conn, _):
+        try:
+            dbapi_conn.execute("PRAGMA foreign_keys=ON;")
+        except Exception:
+            pass
 
-        Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     yield SessionMaker
 
