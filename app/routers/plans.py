@@ -26,19 +26,10 @@ db_dep = Depends(get_db)
 me_dep = Depends(get_current_user)
 
 
-def _map_crud_errors(exc: Exception) -> NoReturn:
-    if isinstance(exc, NotCoachOfClubError):
-        raise HTTPException(status_code=403, detail="Not Coach of this Club")
-    if isinstance(exc, PlanNotFoundError):
-        raise HTTPException(status_code=404, detail="Plan not found")
-    raise
-
-
 @router.get("", response_model=List[PlanRead])
 def list_plans_ep(
     club_id: int, db: Session = db_dep, me: User = me_dep
 ) -> List[PlanRead]:
-    assert_is_member_of_club(db, me.id, club_id)
     plans = get_plans_service(db, club_id=club_id, me=me)
     return [PlanRead.model_validate(p) for p in plans]
 
@@ -50,7 +41,6 @@ def list_assigned_plans_ep(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    assert_is_member_of_club(db, me.id, club_id)
     return list_assigned_plans_service(db, club_id, me, role=role)
 
 
@@ -59,24 +49,15 @@ def list_assigned_plans_ep(
 def create_plan_ep(
     club_id: int, data: PlanCreate, db: Session = db_dep, me: User = me_dep
 ) -> PlanRead:
-    assert_is_member_of_club(db, me.id, club_id)
-    try:
-        plan = create_plan_service(db, club_id=club_id, me=me, data=data)
-        return PlanRead.model_validate(plan)
-    except Exception as e:
-        _map_crud_errors(e)
+    plan = create_plan_service(db, club_id=club_id, me=me, data=data)
+    return PlanRead.model_validate(plan)
 
 
 @router.get("/{plan_id}", response_model=PlanRead)
 def get_plan_by_id_ep(
     club_id: int, plan_id: int, db: Session = db_dep, me: User = me_dep
 ) -> PlanRead:
-    try:
-        plan = get_plan_service(db, plan_id=plan_id, club_id=club_id, me=me)
-        if not plan:
-            raise PlanNotFoundError()
-    except Exception as e:
-        _map_crud_errors(e)
+    plan = get_plan_service(db, plan_id=plan_id, club_id=club_id, me=me)
     return PlanRead.model_validate(plan)
 
 
@@ -88,11 +69,7 @@ def update_plan_by_id_ep(
     db: Session = db_dep,
     me: User = me_dep,
 ) -> PlanRead:
-    assert_is_member_of_club(db, me.id, club_id)
-    # fix update_plan instead of create_plan
     plan = update_plan_service(db, club_id=club_id, plan_id=plan_id, me=me, data=data)
-    if not plan:
-        raise NotCoachOfClubError("Only Coach of Club can update plan")
     return PlanRead.model_validate(plan)
 
 

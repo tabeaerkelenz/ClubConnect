@@ -1,14 +1,9 @@
 from typing import List
 from sqlalchemy.orm import Session as SASession
-from fastapi import APIRouter, Depends, Response, status, HTTPException
+from fastapi import APIRouter, Depends, status
 
 from app.db.deps import get_db
-from app.exceptions.session import NotClubMember, NotCoach, Conflict, InvalidTimeRange, SessionNotFound
 from app.schemas.session import SessionRead, SessionCreate, SessionUpdate
-from app.auth.membership_deps import (
-    assert_is_member_of_club,
-    assert_is_coach_of_club, assert_is_coach_or_owner_of_club,
-)
 from app.auth.deps import get_current_user
 
 from app.services.session import (
@@ -25,30 +20,6 @@ router = APIRouter(
 )
 
 
-_ERROR_MAP = {
-    NotClubMember: (status.HTTP_403_FORBIDDEN, "User is not a member of this club."),
-    NotCoach: (status.HTTP_403_FORBIDDEN, "Coach role required for this action."),
-    Conflict: (status.HTTP_409_CONFLICT, "Conflict (e.g., unique/constraint)."),
-    InvalidTimeRange: (
-        status.HTTP_422_UNPROCESSABLE_ENTITY,
-        "starts_at must be before ends_at.",
-    ),
-    SessionNotFound: (status.HTTP_404_NOT_FOUND, "Session not found."),
-}
-DOMAIN_ERRORS = tuple(_ERROR_MAP.keys())
-
-
-def to_http_exc(err: Exception) -> HTTPException:
-    # handles subclasses too (future-proof if you refine errors later)
-    for cls in err.__class__.__mro__:
-        if cls in _ERROR_MAP:
-            code, detail = _ERROR_MAP[cls]
-            return HTTPException(status_code=code, detail=detail)
-    return HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal error"
-    )
-
-
 # ===== Collection =====
 @router.get("", response_model=List[SessionRead])
 def list_sessions_ep(
@@ -57,12 +28,7 @@ def list_sessions_ep(
     db: SASession = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    # Guards: member can read
-    assert_is_member_of_club(db, me.id, club_id)
-    try:
-        return list_sessions_service(db, club_id, plan_id, me)
-    except DOMAIN_ERRORS as e:
-        raise to_http_exc(e)
+    return list_sessions_service(db, club_id, plan_id, me)
 
 
 @router.post(
@@ -77,12 +43,7 @@ def create_session_ep(
     db: SASession = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    # Guards: coach can write
-    assert_is_coach_or_owner_of_club(db, me.id, club_id)
-    try:
-        return create_session_service(db, club_id, plan_id, me, data)
-    except DOMAIN_ERRORS as e:
-        raise to_http_exc(e)
+    return create_session_service(db, club_id, plan_id, me, data)
 
 
 # ===== Detail =====
@@ -94,12 +55,7 @@ def get_session_ep(
     db: SASession = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    # Guards: member can read
-    assert_is_member_of_club(db, me.id, club_id)
-    try:
-        return get_session_service(db, club_id, plan_id, session_id, me)
-    except DOMAIN_ERRORS as e:
-        raise to_http_exc(e)
+    return get_session_service(db, club_id, plan_id, session_id, me)
 
 
 @router.patch("/{session_id}", response_model=SessionRead)
@@ -111,13 +67,7 @@ def update_session_ep(
     db: SASession = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    # Guards: coach can write
-    assert_is_coach_of_club(db, me.id, club_id)
-    try:
-        # Router enforces partial updates via exclude_unset in CRUD
-        return update_session_service(db, club_id, plan_id, session_id, me, data)
-    except DOMAIN_ERRORS as e:
-        raise to_http_exc(e)
+    return update_session_service(db, club_id, plan_id, session_id, me, data)
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -128,10 +78,4 @@ def delete_session_ep(
     db: SASession = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    # Guards: coach can write
-    assert_is_coach_of_club(db, me.id, club_id)
-    try:
-        delete_session_service(db, club_id, plan_id, session_id, me)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except DOMAIN_ERRORS as e:
-        raise to_http_exc(e)
+    delete_session_service(db, club_id, plan_id, session_id, me)
