@@ -275,7 +275,7 @@ class PlanAssignee(Base):
     __table_args__ = (
         UniqueConstraint("plan_id", "user_id", name="uq_plan_assignees_plan_user"),
         UniqueConstraint("plan_id", "group_id", name="uq_plan_assignees_plan_group"),
-
+        UniqueConstraint("plan_id", "user_id", "role", name="uq_plan_assignees_plan_role"),
         CheckConstraint(
             "(user_id IS NOT NULL) <> (group_id IS NOT NULL)",
             name="ck_plan_assignment_one_target",

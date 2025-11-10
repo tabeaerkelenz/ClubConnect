@@ -21,16 +21,6 @@ router = APIRouter(
 )
 
 
-def _map_error(e: Exception) -> None:
-    name = e.__class__.__name__
-    if name in {"PlanNotFound", "PlanAssigneeNotFound"}:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    if name in {"UserNotClubMember"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    if name in {"Conflict"}:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    raise e
-
 
 @router.get("", response_model=list[PlanAssigneeRead])
 def list_assignees_ep(
@@ -39,11 +29,8 @@ def list_assignees_ep(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    assert_is_member_of_club(db, me.id, club_id)
-    try:
-        return list_assignees_service(db, club_id, plan_id, me)
-    except Exception as e:
-        _map_error(e)
+    return list_assignees_service(db, club_id, plan_id, me)
+
 
 
 @router.post("", response_model=PlanAssigneeRead, status_code=status.HTTP_201_CREATED)
@@ -54,11 +41,8 @@ def add_assignee_ep(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    assert_is_coach_of_club(db, me.id, club_id)
-    try:
-        return add_assignee_service(db, club_id, plan_id, me, data)
-    except Exception as e:
-        _map_error(e)
+    return add_assignee_service(db, club_id, plan_id, me, data)
+
 
 
 @router.delete("/{assignee_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -69,8 +53,5 @@ def remove_assignee_ep(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    assert_is_coach_of_club(db, me.id, club_id)
-    try:
-        remove_assignee_service(db, club_id, plan_id, assignee_id, me)
-    except Exception as e:
-        _map_error(e)
+    remove_assignee_service(db, club_id, plan_id, assignee_id, me)
+

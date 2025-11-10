@@ -69,10 +69,18 @@ class SessionNotFound(NotFoundError):
     default_detail = "Session not found"
 
 # exercise errors
-class ExerciseNotFoundError(DomainError):
-    status_code = 404
+class ExerciseNotFoundError(NotFoundError):
     detail = "Exercise not found."
 
-class PositionConflictError(DomainError):
-    status_code = 409
+class PositionConflictError(ConflictError):
     detail = "Position already taken."
+
+# plan assignment errors
+class PlanAssigneeNotFound(NotFoundError):
+    detail = "Plan assignee not found."
+
+class UserNotClubMember(PermissionDeniedError):
+    detail = "User is not a member of this club."
+
+class PlanAssignmentExistsError(ConflictError):
+    detail = "Plan assignment already exists."
