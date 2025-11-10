@@ -73,6 +73,5 @@ def update_membership_role(
     membership = db.get(Membership, membership_id)
     membership.role = new_role
     db.add(membership)
-    db.commit()
-    db.refresh(membership)
+    db.flush()
     return membership

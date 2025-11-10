@@ -18,9 +18,9 @@ def create_membership_service(db, club_id, email, role) -> Membership:
         raise MembershipExistsError()
 
     try:
-        membersip = create_membership(db, club_id, user.id, role)
+        membership = create_membership(db, club_id, user.id, role)
         db.commit()
-        return membersip
+        return membership
     except IntegrityError as e:
         db.rollback()
         raise MembershipExistsError() from e
@@ -59,9 +59,11 @@ def update_membership_role_service(db, club_id, membership_id, new_role):
     if membership.role == MembershipRole.coach and new_role != MembershipRole.coach:
         remaining = count_other_coaches(db, club_id, membership.user_id)
         if remaining == 0:
+            db.rollback()
             raise LastCoachViolationError()
-    return update_membership_role(db, club_id=club_id, membership_id=membership_id, new_role=new_role
-)
+    db.commit()
+    db.refresh(membership)
+    return update_membership_role(db, club_id=club_id, membership_id=membership_id, new_role=new_role)
 
 
 def delete_membership_service(db: Session, *, club_id: int, membership_id: int) -> None:
