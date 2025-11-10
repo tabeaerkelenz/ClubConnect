@@ -4,16 +4,15 @@ from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
-from app.db.models import Membership, MembershipRole, Club, User
+from app.db.models import User
 from app.schemas.club import ClubCreate, ClubUpdate, ClubRead
-from app.crud.club import create_club, get_club, list_clubs, update_club, delete_club
 from app.auth.deps import get_current_active_user, get_current_user
 from app.services.club import (
     get_club_service,
     update_club_service,
     delete_club_service,
     create_club_service,
-    get_my_clubs_service,
+    get_my_clubs_service, list_clubs_service,
 )
 
 router = APIRouter(
@@ -26,7 +25,7 @@ router = APIRouter(
 def create_club_endpoint(
     payload: ClubCreate,
     db: Session = Depends(get_db),
-    me=Depends(get_current_active_user),
+    me: User=Depends(get_current_active_user),
 ):
     return create_club_service(db, payload, user=me)
 
@@ -38,35 +37,29 @@ def list_or_search_clubs(
     limit: int = 50,
     db: Session = Depends(get_db),
 ):
-    return list_clubs(db, skip=skip, limit=limit, q=q)
+    return list_clubs_service(db, skip=skip, limit=limit, q=q)
 
 
 @router.get("/mine", response_model=list[ClubRead])
 def my_clubs(db: Session = Depends(get_db), me: User = Depends(get_current_user)):
-    return get_my_clubs_service(db, me)
+    return get_my_clubs_service(db, user=me)
 
 
-@router.get("/{club_id:int}", response_model=ClubRead, status_code=status.HTTP_200_OK)
+@router.get("/{club_id}", response_model=ClubRead)
 def get_club_endpoint(club_id: int, db: Session = Depends(get_db)):
     return get_club_service(db, club_id)
 
 
-# add dependency get current active user
-@router.patch(
-    "/{club_id}",
-    response_model=ClubRead,
-    status_code=status.HTTP_200_OK,
-)
+@router.patch("/{club_id}", response_model=ClubRead)
 def update_club_endpoint(
     club_id: int, payload: ClubUpdate, db: Session = Depends(get_db), me: User = Depends(get_current_active_user)
 ):
     return update_club_service(db, user=me, club_id=club_id, data=payload)
 
 
-# add dependency get current active user
 @router.delete(
     "/{club_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_club_endpoint(club_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_active_user)):
-    delete_club_service(db, me, club_id)
+    delete_club_service(db, user=me, club_id=club_id)
