@@ -1,6 +1,8 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, HTMLResponse
+
 from app.auth.routes import router as auth_router
+from app.exceptions.base import DomainError
 from app.routers import (
     clubs,
     users,
@@ -9,12 +11,21 @@ from app.routers import (
     sessions,
     exercises,
     plan_assignments,
-    demo,
-    demo_ui, group_memberships, groups, attendances,
+    group_memberships, groups, attendances,
 )
+
+def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(DomainError)
+    async def domain_error_handler(_req: Request, exc: DomainError):
+        return JSONResponse(
+            status_code=getattr(exc, "status_code", 500),
+            content={"detail": getattr(exc, "detail", "Internal error")},
+        )
+
 
 app = FastAPI(title="ClubTrack API")
 
+register_exception_handlers(app)
 
 @app.get("/healthz")
 def healthz():
@@ -58,7 +69,6 @@ def welcome():
 app.include_router(clubs.router)
 app.include_router(auth_router)
 app.include_router(users.router)
-# specify the router name
 app.include_router(memberships.clubs_memberships_router)
 app.include_router(memberships.memberships_router)
 app.include_router(plans.router)
@@ -68,8 +78,6 @@ app.include_router(plan_assignments.router)
 app.include_router(groups.router)
 app.include_router(group_memberships.router)
 app.include_router(attendances.router)
-app.include_router(demo.router)
-app.include_router(demo_ui.router)
 
 
 # to run from project root: python -m uvicorn ClubConnect.app.main:app --reload
