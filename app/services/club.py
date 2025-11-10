@@ -1,14 +1,11 @@
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth.membership_deps import assert_is_owner_of_club
 from app.crud import club as crud
 from app.crud.club import get_clubs_by_user, create_club, add_membership
 from app.crud.membership import get_membership
 from app.db.models import MembershipRole, User, Club
-from app.exceptions.club import PermissionDeniedError
-from app.exceptions.membership import ClubNotFoundError, MembershipNotFoundError
+from app.exceptions.base import MembershipNotFoundError, PermissionDeniedError, ClubNotFoundError
 from app.schemas.club import ClubUpdate, ClubCreate
 
 
