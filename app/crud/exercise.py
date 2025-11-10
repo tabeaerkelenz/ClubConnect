@@ -1,41 +1,14 @@
 import sqlalchemy as sa
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session as SASession
+from sqlalchemy.orm import Session as SASession, Session
 
 from app.db.models import Plan, Exercise
 
-
-class ExerciseNotFoundError(Exception):
-    """Exercise not found."""
-
-    pass
+def get_plan_in_club(db: Session, club_id: int, plan_id: int) -> Plan | None:
+    stmt = sa.select(Plan).where(Plan.id == plan_id, Plan.club_id == club_id)
+    return db.execute(stmt).scalar_one_or_none()
 
 
-class PlanNotFoundError(Exception):
-    """Plan not found."""
-
-    pass
-
-
-class ConflictError(Exception):
-    """Position already taken."""
-
-    pass
-
-
-def _get_plan_in_club_or_raise(db: SASession, club_id: int, plan_id: int) -> Plan:
-    """Get plan by id and club_id or raise PlanNotFoundError."""
-    stmt = sa.select(Plan).where(
-        Plan.id == plan_id,
-        Plan.club_id == club_id,
-    )
-    plan = db.execute(stmt).scalar_one_or_none()
-    if not plan:
-        raise PlanNotFoundError()
-    return plan
-
-
-def _get_exercise_in_plan_and_club_or_raise(
+def get_exercise_in_plan_and_club(
     db: SASession, club_id: int, plan_id: int, exercise_id: int
 ) -> Exercise:
     """Get exercise by id, plan_id and club_id or raise ExerciseNotFoundError."""
@@ -49,13 +22,10 @@ def _get_exercise_in_plan_and_club_or_raise(
         )
     )
     exercise = db.execute(stmt).scalar_one_or_none()
-    if not exercise:
-        # If you have ExerciseNotFound, raise that; else reuse PlanNotFoundError
-        raise PlanNotFoundError()
     return exercise
 
 
-def _next_position(db: SASession, plan_id: int) -> int:
+def next_position(db: SASession, plan_id: int) -> int:
     """Get the next available position for an exercise in a plan."""
     stmt = sa.select(sa.func.coalesce(sa.func.max(Exercise.position) + 1, 0)).where(
         Exercise.plan_id == plan_id
@@ -63,48 +33,15 @@ def _next_position(db: SASession, plan_id: int) -> int:
     return db.execute(stmt).scalar_one()
 
 
-def create_exercise(db: SASession, club_id: int, plan_id: int, me, data) -> Exercise:
-    """Create a new exercise in a plan within a club."""
-    _get_plan_in_club_or_raise(db, club_id, plan_id)
-
-    payload = data.model_dump(exclude_none=True)
-    desired_pos = payload.get("position")
-
-    for _ in range(3):
-        pos = desired_pos if desired_pos is not None else _next_position(db, plan_id)
-
-        obj = Exercise(
-            plan_id=plan_id,
-            name=data.name,  # required
-            description=data.description,  # optional -> may be None
-            sets=data.sets,
-            repetitions=data.repetitions,
-            position=pos,
-            day_label=data.day_label,
-        )
-
-        db.add(obj)
-        try:
-            db.commit()
-            db.refresh(obj)
-            return obj
-        except IntegrityError as e:
-            db.rollback()
-            # Unique collision on (plan_id, position): recompute and retry only if auto-append
-            # PostgreSQL code for unique violation is 23505
-            pgcode = getattr(getattr(e, "orig", None), "pgcode", None)
-            if desired_pos is None and pgcode == "23505":
-                # another insert took this position; loop and try next _next_position()
-                continue
-            raise ConflictError()
-
-    raise ConflictError()
+def insert_exercise(db: Session, *, plan_id: int, **fields) -> Exercise:
+    exercise = Exercise(plan_id=plan_id, **fields)
+    db.add(exercise)
+    db.flush()
+    return exercise
 
 
 def list_exercises(db: SASession, club_id: int, plan_id: int) -> list[Exercise]:
     """List all exercises in a plan within a club, ordered by position ascending."""
-    _get_plan_in_club_or_raise(db, club_id, plan_id)
-
     stmt = (
         sa.select(Exercise)
         .where(Exercise.plan_id == plan_id)
@@ -115,53 +52,13 @@ def list_exercises(db: SASession, club_id: int, plan_id: int) -> list[Exercise]:
     return exercises
 
 
-def get_exercise(
-    db: SASession, club_id: int, plan_id: int, exercise_id: int, me
-) -> Exercise:
-    """Get an exercise by id within a plan and club."""
-    return _get_exercise_in_plan_and_club_or_raise(db, club_id, plan_id, exercise_id)
-
-
-def update_exercise(
-    db: SASession, club_id: int, plan_id: int, exercise_id: int, me, data
-) -> Exercise:
-    """Update an exercise by id within a plan and club."""
-    exercise = _get_exercise_in_plan_and_club_or_raise(
-        db, club_id, plan_id, exercise_id
-    )
-
-    updates = data.model_dump(exclude_unset=True)
-    # If position omitted → no change; if provided and None → drop it
-    if "position" in updates and updates["position"] is None:
-        updates.pop("position")
-
+def update_exercise_fields(db: Session, exercise: Exercise, **updates) -> Exercise:
     for k, v in updates.items():
         setattr(exercise, k, v)
-
-    try:
-        db.commit()
-    except IntegrityError as e:
-        db.rollback()
-        # if position changed and collided → Conflict
-        pgcode = getattr(getattr(e, "orig", None), "pgcode", None)
-        if ("position" in updates) and pgcode == "23505":
-            raise ConflictError()
-        raise ConflictError()
-    db.refresh(exercise)
+    db.flush()
     return exercise
 
 
-def delete_exercise(
-    db: SASession, club_id: int, plan_id: int, exercise_id: int
-) -> Exercise:
-    """Delete an exercise by id within a plan and club."""
-    exercise = _get_exercise_in_plan_and_club_or_raise(
-        db, club_id, plan_id, exercise_id
-    )
+def delete_exercise(db: Session, exercise: Exercise) -> None:
     db.delete(exercise)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        ConflictError()
-    return None
+    db.flush()
