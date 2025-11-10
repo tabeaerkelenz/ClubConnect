@@ -5,14 +5,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SASession
 
 from app.auth.membership_deps import assert_is_coach_or_owner_of_club
-from app.crud.plan_assignment import Conflict
 from app.crud.session import (
     list_sessions,
     update_session,
     delete_session, get_session_in_plan_and_club, insert_session,
 )
 from app.db.models import User
-from app.exceptions.base import SessionNotFound, InvalidTimeRange
+from app.exceptions.base import SessionNotFound, InvalidTimeRange, ConflictError
 from app.schemas.session import SessionCreate
 
 
@@ -59,7 +58,7 @@ def update_session_service(db, club_id, plan_id, session_id, me, data):
         return session
     except IntegrityError as e:
         db.rollback()
-        raise Conflict() from e
+        raise ConflictError() from e
 
 
 def delete_session_service(
@@ -72,4 +71,4 @@ def delete_session_service(
         db.commit()
     except IntegrityError as e:
         db.rollback()
-        raise Conflict() from e
+        raise ConflictError() from e

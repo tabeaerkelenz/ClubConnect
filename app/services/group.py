@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
-
-from app.crud.exercise import ConflictError
 from app.crud.group import create_group, get_group_by_id, list_search_groups
+from app.exceptions.base import ConflictError
 
 
 def create_group_service(db: Session, club_id, name: str, description: str, created_by_id: int):
