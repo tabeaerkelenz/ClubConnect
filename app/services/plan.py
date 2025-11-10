@@ -9,7 +9,7 @@ from app.crud.plan import (
     delete_plan,
 )
 from app.db.models import User
-from app.exceptions.plan import NotCoachOfClubError, PlanNotFoundError
+from app.exceptions.base import NotCoachOfClubError, PlanNotFoundError
 from app.schemas.plan import PlanCreate, PlanUpdate
 
 

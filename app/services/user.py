@@ -1,11 +1,10 @@
-# app/services/user.py
 from typing import Mapping, Any
-from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.user import get_user_by_email, update_user_fields, commit_and_refresh
 from app.db.models import User
+from app.exceptions.base import EmailExistsError
 from app.schemas.user import UserUpdate
 
 FORBIDDEN_FIELDS = {"is_active", "role", "password", "password_hash", "id", "created_at", "updated_at"}
@@ -35,10 +34,8 @@ def assert_unique_email_if_changed(db: Session, me: User, data: Mapping[str, Any
     if new_email == me.email:
         return
     if get_user_by_email(db, new_email) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
-        )
+        raise EmailExistsError
+
 
 def update_me_service(db: Session, me: User, payload: UserUpdate) -> User:
     """
@@ -56,7 +53,4 @@ def update_me_service(db: Session, me: User, payload: UserUpdate) -> User:
     except IntegrityError:
         db.rollback()
         # defensive fallback if a DB constraint tripped anyway
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
-        )
+        raise EmailExistsError

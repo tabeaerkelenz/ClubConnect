@@ -24,6 +24,10 @@ class ConflictError(DomainError):
     default_detail = "Conflict"
 
 
+# user exceptions
+class EmailExistsError(ConflictError):
+    default_detail = "Email already exists"
+
 # club exceptions
 class ClubNotFoundError(NotFoundError):
     default_detail = "Club not found"
@@ -33,3 +37,42 @@ class MembershipNotFoundError(NotFoundError):
 
 class DuplicateSlugError(ConflictError):
     default_detail = "Slug already exists"
+
+# membership exceptions
+class UserNotFoundError(NotFoundError):
+    default_detail = "User not found"
+
+class MembershipExistsError(ConflictError):
+    default_detail = "Membership already exists"
+
+class LastCoachViolationError(ConflictError):
+    default_detail = "Last Coach Violation"
+
+
+# Plan errors
+class NotCoachOfClubError(PermissionDeniedError):
+    default_detail = "Not Coach Club"
+
+
+class PlanNotFoundError(NotFoundError):
+    default_detail = "Plan not found"
+
+
+# session errors
+class NotClubMember(PermissionDeniedError):
+    default_detail = "Not Club Member"
+
+class InvalidTimeRange(ConflictError):
+    default_detail = "Invalid time range"
+
+class SessionNotFound(NotFoundError):
+    default_detail = "Session not found"
+
+# exercise errors
+class ExerciseNotFoundError(DomainError):
+    status_code = 404
+    detail = "Exercise not found."
+
+class PositionConflictError(DomainError):
+    status_code = 409
+    detail = "Position already taken."
