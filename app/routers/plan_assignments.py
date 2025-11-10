@@ -1,11 +1,8 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.auth.deps import get_current_user
-from app.auth.membership_deps import (
-    assert_is_member_of_club,
-    assert_is_coach_of_club,
-)
+
 from app.db.deps import get_db
 from app.schemas.plan_assignment import PlanAssigneeRead, PlanAssigneeCreate
 
