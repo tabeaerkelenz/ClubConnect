@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator, Field
-from app.db.models import DayLabel
+from app.models.models import DayLabel
 
 _MAX_NAME = 100
 _MAX_DESCRIPTION = 1000

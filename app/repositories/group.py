@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.db.models import Group
+from app.models.models import Group
 
 
 def create_group(db: Session, *, club_id: int, name: str, description: str, created_by_id:int) -> Group:

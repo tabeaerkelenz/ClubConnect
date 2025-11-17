@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Plan, User, PlanAssignee, PlanAssigneeRole
+from app.models.models import Plan, User, PlanAssignee, PlanAssigneeRole
 from app.schemas.plan import PlanCreate, PlanUpdate
 
 

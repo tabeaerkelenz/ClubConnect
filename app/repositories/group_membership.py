@@ -1,7 +1,7 @@
-# app/crud/group_membership.py
-from sqlalchemy import select, insert, delete, update
+# app/repositories/group_membership.py
+from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
-from app.db.models import GroupMembership, Group, Membership  # Membership = Club-Mitgliedschaft
+from app.models.models import GroupMembership  # Membership = Club-Mitgliedschaft
 
 def list_group_memberships(db: Session, group_id: int) -> list[GroupMembership]:
     stmt = select(GroupMembership).where(GroupMembership.group_id == group_id).order_by(GroupMembership.user_id.asc())

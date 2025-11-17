@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
-from app.db.models import User
+from app.models.models import User
 from app.schemas.club import ClubCreate, ClubUpdate, ClubRead
 from app.auth.deps import get_current_active_user, get_current_user
 from app.services.club import (

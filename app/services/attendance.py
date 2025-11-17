@@ -1,11 +1,9 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
-from app.crud.session import get_session_club_id
-from app.db.models import Session as SessionModel, Plan
+from app.repositories.session import get_session_club_id
 from app.schemas.attendance import AttendanceCreate, AttendanceUpdate
-from app.crud.attendance import (
+from app.repositories.attendance import (
     create_attendance as crud_create_attendance,
     list_attendances_by_session as crud_list_attendances,
     get_attendance as crud_get_attendance,

@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.orm import Session
-from app.crud.plan import (
+from app.repositories.plan import (
     create_plan,
     get_plan,
     get_plans,
@@ -8,7 +8,7 @@ from app.crud.plan import (
     update_plan,
     delete_plan,
 )
-from app.db.models import User
+from app.models.models import User
 from app.exceptions.base import NotCoachOfClubError, PlanNotFoundError
 from app.schemas.plan import PlanCreate, PlanUpdate
 

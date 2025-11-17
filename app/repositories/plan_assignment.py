@@ -1,9 +1,8 @@
 from __future__ import annotations
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
-from app.db.models import Plan, Membership, PlanAssignee
+from app.models.models import Plan, PlanAssignee
 
 
 

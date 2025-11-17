@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, field_validator
-from app.db.models import PlanAssigneeRole
+from pydantic import BaseModel, ConfigDict
+from app.models.models import PlanAssigneeRole
 
 
 class PlanAssigneeRead(BaseModel):

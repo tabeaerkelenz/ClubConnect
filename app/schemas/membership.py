@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-from app.db.models import MembershipRole
+from app.models.models import MembershipRole
 
 
 class MembershipRead(BaseModel):

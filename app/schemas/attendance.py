@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
-from app.db.models import AttendanceStatus  # dein Enum
+from app.models.models import AttendanceStatus  # dein Enum
 
 class AttendanceCreate(BaseModel):
     status: AttendanceStatus | None = None

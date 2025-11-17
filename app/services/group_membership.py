@@ -1,9 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.db.models import Group
-from app.crud.user import get_user_by_email
-from app.crud.group_membership import (
+from app.models.models import Group
+from app.repositories.user import get_user_by_email
+from app.repositories.group_membership import (
     list_group_memberships, add_group_member, remove_group_member
 )
 from app.auth.membership_deps import assert_is_coach_of_club, assert_is_member_of_club

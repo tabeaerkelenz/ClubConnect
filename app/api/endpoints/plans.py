@@ -1,15 +1,10 @@
-from typing import NoReturn, List, Literal
-from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Literal
+from fastapi import APIRouter, Depends, Query
 
 from app.auth.deps import get_current_user
-from app.auth.membership_deps import (
-    assert_is_member_of_club,
-    assert_is_coach_of_club,
-)
 from app.db.deps import get_db
 from app.services.plan import *
-from app.db.models import User, PlanAssigneeRole
+from app.models.models import User
 from app.schemas.plan import PlanRead, PlanCreate, PlanUpdate
 
 from app.services.plan import (

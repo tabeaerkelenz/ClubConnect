@@ -1,9 +1,9 @@
 # app/routers/group_memberships.py
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
-from app.db.models import User
+from app.models.models import User
 from app.auth.deps import get_current_user
 from app.schemas.group_membership import GroupMembershipRead, GroupMembershipCreate, GroupMembershipSet, \
     GroupMembershipInvite

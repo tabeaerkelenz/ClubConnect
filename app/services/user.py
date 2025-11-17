@@ -2,8 +2,8 @@ from typing import Mapping, Any
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.crud.user import get_user_by_email, update_user_fields, commit_and_refresh
-from app.db.models import User
+from app.repositories.user import get_user_by_email, update_user_fields, commit_and_refresh
+from app.models.models import User
 from app.exceptions.base import EmailExistsError
 from app.schemas.user import UserUpdate
 

@@ -1,12 +1,11 @@
-from typing import NoReturn, List
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
 from app.db.deps import get_db
-from app.db.models import User, MembershipRole, Membership
-from app.exceptions.base import UserNotFoundError
+from app.models.models import User, MembershipRole
 from app.schemas.membership import (
     MembershipRead,
     MembershipUpdate,

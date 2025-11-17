@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from app.db.models import PlanType
+from app.models.models import PlanType
 
 
 class PlanRead(BaseModel):

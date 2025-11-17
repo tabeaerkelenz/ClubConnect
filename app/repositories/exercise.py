@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import Session as SASession, Session
 
-from app.db.models import Plan, Exercise
+from app.models.models import Plan, Exercise
 
 def get_plan_in_club(db: Session, club_id: int, plan_id: int) -> Plan | None:
     stmt = sa.select(Plan).where(Plan.id == plan_id, Plan.club_id == club_id)

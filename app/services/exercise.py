@@ -1,8 +1,8 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SASession, Session
-from app.crud.exercise import (list_exercises, delete_exercise, get_plan_in_club, insert_exercise, next_position,
-                               get_exercise_in_plan_and_club, update_exercise_fields, )
-from app.db.models import User
+from app.repositories.exercise import (list_exercises, delete_exercise, get_plan_in_club, insert_exercise, next_position,
+                                       get_exercise_in_plan_and_club, update_exercise_fields, )
+from app.models.models import User
 from app.exceptions.base import PlanNotFoundError, PositionConflictError, ExerciseNotFoundError
 
 

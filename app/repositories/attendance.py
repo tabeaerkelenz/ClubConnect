@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.db.models import Attendance, AttendanceStatus
+from app.models.models import Attendance, AttendanceStatus
 from app.schemas.attendance import AttendanceUpdate
 
 def create_attendance(

@@ -1,11 +1,11 @@
-# app/crud/user.py
+# app/repositories/user.py
 from collections.abc import Mapping
 from typing import Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.core.security import verify_password
-from app.db.models import User
+from app.models.models import User
 
 def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.get(User, user_id)

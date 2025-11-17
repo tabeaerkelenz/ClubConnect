@@ -1,9 +1,9 @@
 from sqlalchemy.exc import IntegrityError
 
 from app.auth.membership_deps import count_coach_owner
-from app.crud.membership import *
-from app.crud.user import get_user_by_email
-from app.crud.club import get_club
+from app.repositories.membership import *
+from app.repositories.user import get_user_by_email
+from app.repositories.club import get_club
 from app.exceptions.base import UserNotFoundError, MembershipExistsError, ClubNotFoundError, MembershipNotFoundError, \
     LastCoachViolationError
 

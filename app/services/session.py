@@ -5,12 +5,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SASession
 
 from app.auth.membership_deps import assert_is_coach_or_owner_of_club
-from app.crud.session import (
+from app.repositories.session import (
     list_sessions,
     update_session,
     delete_session, get_session_in_plan_and_club, insert_session,
 )
-from app.db.models import User
+from app.models.models import User
 from app.exceptions.base import SessionNotFound, InvalidTimeRange, ConflictError
 from app.schemas.session import SessionCreate
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_active_user
 from app.db.deps import get_db
-from app.db.models import User
+from app.models.models import User
 from app.schemas.user import UserRead, UserUpdate
 from app.services.user import update_me_service
 

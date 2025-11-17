@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
-from app.db.models import Membership, MembershipRole
+from app.models.models import Membership, MembershipRole
 
 def membership_not_exists(db: Session, user_id: int, club_id: int):
     exist = db.execute(

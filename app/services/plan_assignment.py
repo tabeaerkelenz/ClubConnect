@@ -4,7 +4,7 @@ from werkzeug.exceptions import Conflict
 
 from app.auth.membership_deps import assert_has_any_role_of_club, assert_is_coach_or_owner_of_club
 from app.exceptions.base import PlanNotFoundError, PlanAssignmentExistsError, PlanAssigneeNotFound
-from app.crud.plan_assignment import list_assignees, add_assignee, get_plan_in_club, get_assignee, delete_assignee
+from app.repositories.plan_assignment import list_assignees, add_assignee, get_plan_in_club, get_assignee, delete_assignee
 
 
 def list_assignees_service(db: Session, club_id: int, plan_id: int, me):

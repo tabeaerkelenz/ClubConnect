@@ -4,8 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.orm import Session as SASession, Session
 
-# adjust import to your layout
-from app.db.models import Session as SessionModel, Plan
+from app.models.models import Session as SessionModel, Plan
 
 def get_session_club_id(db: Session, session_id: int) -> int | None:
     return db.execute(

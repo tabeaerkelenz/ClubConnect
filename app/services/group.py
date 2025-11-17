@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.crud.group import create_group, get_group_by_id, list_search_groups
+from app.repositories.group import create_group, get_group_by_id, list_search_groups
 from app.exceptions.base import ConflictError
 
 
