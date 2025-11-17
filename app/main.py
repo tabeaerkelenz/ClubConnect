@@ -1,22 +1,27 @@
-from fastapi import FastAPI, Request
+from alembic.util import status
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, HTMLResponse
 
 from app.auth.routes import router as auth_router
-from app.exceptions.base import DomainError
-from app.routers import (
+from app.exceptions.base import DomainError, EmailExistsError
+from app.api.endpoints import (
     clubs,
-    users,
-    memberships,
     plans,
-    sessions,
-    exercises,
     plan_assignments,
-    group_memberships, groups, attendances,
+    attendances,
 )
+from app.api.endpoints import users, exercises, group_memberships, groups, memberships, sessions
+
+DOMAIN_ERROR_TO_HTTP_MAP = {
+    EmailExistsError: status.HTTP_409_CONFLICT,
+    # add all the specific exceptions from base
+}
+
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
     async def domain_error_handler(_req: Request, exc: DomainError):
+        http_status = DOMAIN_ERROR_TO_HTTP_MAP.get(type(exc ), status.HTTP_500_INTERNAL_SERVER_ERROR)
         return JSONResponse(
             status_code=getattr(exc, "status_code", 500),
             content={"detail": getattr(exc, "detail", "Internal error")},
