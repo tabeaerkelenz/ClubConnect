@@ -11,8 +11,7 @@ if PROJECT_ROOT not in sys.path:
 # -------------------------------------------------------
 
 # Import the base
-from app.db.database import Base
-import app.db.models
+from app.db.base import Base
 
 load_dotenv()  # loads .env from project root
 

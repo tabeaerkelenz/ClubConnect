@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
-from app.db.models import Membership, MembershipRole
+from app.models.models import Membership, MembershipRole
 
 def _get_membership(db: Session, user_id: int, club_id: int) -> Membership | None:
     return db.execute(

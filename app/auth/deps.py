@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.jwt_utils import decode_token
 from app.db.deps import get_db
-from app.db.models import UserRole, User
+from app.models.models import UserRole, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 RoleArg = Union[UserRole, str]

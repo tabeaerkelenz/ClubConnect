@@ -1,4 +1,3 @@
-# app/routers/group_memberships.py
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
