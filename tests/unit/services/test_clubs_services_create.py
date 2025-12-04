@@ -83,6 +83,160 @@ def test_create_club_duplicate_slug(
     mock_club_repo.add_membership.assert_not_called()
 
 
+def test_get_club_success(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    club_id = 42
+    mock_club = MagicMock(spec=Club, id=club_id, name="Test Club")
+    mock_club_repo.get_club.return_value = mock_club
+
+    # Act
+    result = club_service.get_club_service(club_id=club_id)
+
+    # Assert
+    mock_club_repo.get_club.assert_called_once_with(club_id)
+    assert result is mock_club
+
+
+def test_get_club_not_found(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    club_id = 999
+    mock_club_repo.get_club.return_value = None
+
+    # Act & Assert
+    with pytest.raises(ClubNotFoundError):
+        club_service.get_club_service(club_id=club_id)
+
+    mock_club_repo.get_club.assert_called_once_with(club_id)
+
+
+def test_get_my_clubs_success(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+    mock_user: User,
+):
+    # Arrange
+    mock_clubs = [
+        MagicMock(spec=Club, id=1, name="Club A"),
+        MagicMock(spec=Club, id=2, name="Club B"),
+    ]
+    mock_club_repo.get_clubs_by_user.return_value = mock_clubs
+
+    # Act
+    result = club_service.get_my_clubs_service(user=mock_user)
+
+    # Assert
+    mock_club_repo.get_clubs_by_user.assert_called_once_with(mock_user.id)
+    assert result == mock_clubs
+
+
+def test_list_clubs_success(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    mock_clubs = [
+        MagicMock(spec=Club, id=1, name="Club A"),
+        MagicMock(spec=Club, id=2, name="Club B"),
+    ]
+    mock_club_repo.list_clubs.return_value = mock_clubs
+
+    # Act
+    result = club_service.list_clubs_service(skip=0, limit=10, q=None)
+
+    # Assert
+    mock_club_repo.list_clubs.assert_called_once_with(skip=0, limit=10, q=None)
+    assert result == mock_clubs
+
+
+def test_list_clubs_with_query(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    mock_clubs = [
+        MagicMock(spec=Club, id=1, name="Soccer Club"),
+        MagicMock(spec=Club, id=2, name="Soccer Club"),
+    ]
+    mock_club_repo.list_clubs.return_value = mock_clubs
+
+    # Act
+    result = club_service.list_clubs_service(skip=0, limit=10, q="Soccer")
+
+    # Assert
+    mock_club_repo.list_clubs.assert_called_once()
+    args, kwargs = mock_club_repo.list_clubs.call_args
+
+    assert result == mock_clubs
+    assert args == ()
+    assert kwargs == {"skip": 0, "limit": 10, "q": "Soccer"}
+
+
+def test_list_clubs_limit_bounds(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    mock_clubs = []
+    mock_club_repo.list_clubs.return_value = mock_clubs
+
+    # Act
+    result = club_service.list_clubs_service(skip=0, limit=500, q=None)
+
+    # Assert
+    mock_club_repo.list_clubs.assert_called_once()
+    args, kwargs = mock_club_repo.list_clubs.call_args
+
+    assert result == mock_clubs
+    assert args == ()
+    assert kwargs == {"skip": 0, "limit": 200, "q": None}
+
+
+def test_list_clubs_with_negative_skip(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    mock_clubs = []
+    mock_club_repo.list_clubs.return_value = mock_clubs
+
+    # Act
+    result = club_service.list_clubs_service(skip=-10, limit=10, q=None)
+
+    # Assert
+    mock_club_repo.list_clubs.assert_called_once()
+    args, kwargs = mock_club_repo.list_clubs.call_args
+
+    assert result == mock_clubs
+    assert args == ()
+    assert kwargs == {"skip": 0, "limit": 10, "q": None}
+
+
+def test_list_clubs_with_query_wide_spaces(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    mock_clubs = []
+    mock_club_repo.list_clubs.return_value = mock_clubs
+
+    # Act
+    result = club_service.list_clubs_service(skip=0, limit=10, q="   ")
+
+    # Assert
+    mock_club_repo.list_clubs.assert_called_once()
+    args, kwargs = mock_club_repo.list_clubs.call_args
+
+    assert result == mock_clubs
+    assert args == ()
+    assert kwargs == {"skip": 0, "limit": 10, "q": None}
+
+
 # update_club_service tests
 def test_update_club_success(
     club_service: ClubService,
