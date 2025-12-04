@@ -38,15 +38,15 @@ class ClubService:
         limit = max(1, min(limit, 200))
 
         if q is not None:
-            q = q.strip()
-            if q == "":
+            q_striped = q.strip()
+            if q_striped == "":
                 q = None
 
         return self.club_repo.list_clubs(skip=skip, limit=limit, q=q)
 
 
     def get_my_clubs_service(self, user):
-        clubs = self.club_repo.get_clubs_by_user(user)
+        clubs = self.club_repo.get_clubs_by_user(user.id)
         return clubs
 
 
