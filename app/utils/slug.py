@@ -18,6 +18,8 @@ def generate_club_slug(parts: Iterable[str | None]) -> str:
     for part in parts:
         if not part:
             continue
+        if not isinstance(part, str):
+            continue
         slug_part = slugify_part(part)
         if slug_part:
             cleaned_parts.append(slug_part)

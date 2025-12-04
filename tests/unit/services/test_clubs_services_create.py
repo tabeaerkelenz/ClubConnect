@@ -83,6 +83,76 @@ def test_create_club_duplicate_slug(
     mock_club_repo.add_membership.assert_not_called()
 
 
+# update_club_service tests
+def test_update_club_success(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    club_id = 42
+    club_update = ClubUpdate(name="Updated Club Name")
+    mock_club = MagicMock(spec=Club, id=club_id, name="Old Club Name", country="DE", city="Berlin", sport="Soccer")
+    updated_club = MagicMock(spec=Club, id=club_id, name="Updated Club Name")
+
+    mock_club_repo.get_club.return_value = mock_club
+    mock_club_repo.update_club.return_value = updated_club
+
+    # Act
+    result = club_service.update_club_service(user=None, club_id=club_id, club_update=club_update)
+
+    # Assert
+    mock_club_repo.get_club.assert_called_once_with(club_id)
+    mock_club_repo.update_club.assert_called_once()
+    args, kwargs = mock_club_repo.update_club.call_args
+
+    assert args[0] == mock_club
+    assert kwargs["name"] == "Updated Club Name"
+    assert "slug" in kwargs
+    assert kwargs["slug"] == "updated-club-name-de-berlin-soccer"
+    assert result is updated_club
+
+
+def test_update_club_not_found(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    club_id = 999
+    club_update = ClubUpdate(name="Updated Club Name")
+    mock_club_repo.get_club.return_value = None
+
+    # Act & Assert
+    with pytest.raises(ClubNotFoundError):
+        club_service.update_club_service(user=None, club_id=club_id, club_update=club_update)
+
+    mock_club_repo.update_club.assert_not_called()
+
+
+def test_update_duplicate_slug(
+    club_service: ClubService,
+    mock_club_repo: MagicMock,
+):
+    # Arrange
+    club_id = 42
+    club_update = ClubUpdate(name="Duplicate Slug Name")
+    mock_club = MagicMock(spec=Club, id=club_id, name="Old Club Name", country="DE", city="Berlin", sport="Soccer")
+
+    mock_club_repo.get_club.return_value = mock_club
+    mock_club_repo.update_club.side_effect = DuplicateSlugError("Club with this slug already exists.")
+
+    # Act & Assert
+    with pytest.raises(DuplicateSlugError, match="Club with this slug already exists."):
+        club_service.update_club_service(user=None, club_id=club_id, club_update=club_update)
+
+    mock_club_repo.get_club.assert_called_once()
+    args, kwargs = mock_club_repo.update_club.call_args
+
+    assert args[0] == mock_club
+    assert kwargs["name"] == "Duplicate Slug Name"
+    assert "slug" in kwargs
+    assert kwargs["slug"] == "duplicate-slug-name-de-berlin-soccer"
+
+
 # delete_club_service tests
 def test_delete_club_success(
     club_service: ClubService,

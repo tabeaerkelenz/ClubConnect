@@ -56,7 +56,33 @@ class ClubService:
         if not club:
             raise ClubNotFoundError()
 
-        updated_club = self.club_repo.update_club(club, **club_update.model_dump(exclude_unset=True))
+        # get current data
+        current_data = {
+            "name": club.name,
+            "country": club.country,
+            "city": club.city,
+            "sport": club.sport,
+        }
+
+        # merge new data
+        update_data = club_update.model_dump(exclude_unset=True)
+        merged = {**current_data, **update_data}
+
+        # create new slug
+        new_slug = generate_club_slug(
+            [
+            merged["name"],
+            merged["country"],
+            merged["city"],
+            merged["sport"],
+            ]
+        )
+
+        # add new slug to update data
+        update_data["slug"] = new_slug
+
+        # call repo to update club
+        updated_club = self.club_repo.update_club(club, **update_data)
 
         return updated_club
 
