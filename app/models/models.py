@@ -15,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from .base import TimestampMixin, Base
+from app.db.base import TimestampMixin, Base
 
 
 # –––––––––– Enums ––––––––––
@@ -138,6 +138,8 @@ class Club(Base, TimestampMixin):
     city: Mapped[str] = mapped_column(String(128), nullable=True)
     sport: Mapped[str] = mapped_column(String(100), nullable=True)
     founded_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
 
     plans = relationship("Plan", back_populates="club", cascade="all, delete-orphan")
     memberships = relationship(

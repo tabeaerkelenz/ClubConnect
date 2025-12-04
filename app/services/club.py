@@ -1,7 +1,9 @@
 from app.exceptions.base import  ClubNotFoundError
+from app.models.models import User
 from app.schemas.club import ClubUpdate, ClubCreate, ClubRead
 from app.schemas.membership import MembershipCreate
 from app.repositories.club import ClubRepository
+from app.utils.slug import generate_club_slug
 
 
 class ClubService:
@@ -9,13 +11,25 @@ class ClubService:
         self.club_repo = club_repo
 
 
-    def create_club_and_owner(self, club_create: ClubCreate, membership_create: MembershipCreate):
-        club = self.club_repo.create_club(**club_create.model_dump(exclude_unset=True))
-        owner = self.membership_repo.crete_membership(**membership_create.model_dump(exclude_unset=True))
-        return club, owner
+    def create_club_and_owner(self, club_create: ClubCreate, membership_create: MembershipCreate, user: User):
+        slug = generate_club_slug([club_create.name, club_create.country, club_create.city, club_create.sport])
+
+        club_data = club_create.model_dump(exclude_unset=True)
+        club_data['slug'] = slug
+        club = self.club_repo.create_club(**club_data)
+
+        owner_membership = self.club_repo.add_membership(
+            user_id=user.id,
+            club_id=club.id,
+            role=membership_create.role
+        )
+
+        return club, owner_membership
 
     def get_club_service(self, club_id: int):
         club = self.club_repo.get_club(club_id)
+        if not club:
+            raise ClubNotFoundError()
         return club
 
 
@@ -38,13 +52,19 @@ class ClubService:
 
 
     def update_club_service(self, user, club_id: int, club_update: ClubUpdate):
-        # i need to add membership dependencies here: assert_is_owner_or_coach_of_club
-        updated_club = self.club_repo.update_club(**club_update.model_dump(exclude_unset=True))
+        club = self.club_repo.get_club(club_id)
+        if not club:
+            raise ClubNotFoundError()
+
+        updated_club = self.club_repo.update_club(club, **club_update.model_dump(exclude_unset=True))
+
         return updated_club
 
     def delete_club_service(self, club_id):
         club = self.club_repo.get_club(club_id)
         if not club:
             raise ClubNotFoundError()
+
         self.club_repo.delete_club(club)
+
         return None

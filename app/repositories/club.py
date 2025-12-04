@@ -79,11 +79,8 @@ class ClubRepository:
             if "duplicate key value violates unique constraint" in str(e):
                 raise DuplicateSlugError
 
+
     def delete_club(self, club: Club) -> Club | None:
         """Delete a club."""
-        try:
-            self.db.delete(club)
-            self.db.commit()
-        except IntegrityError as e:
-            if "Not found" in str(e):
-                raise ClubNotFoundError
+        self.db.delete(club)
+        self.db.commit()
