@@ -1,63 +1,51 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_active_user
-from app.core.security import hash_password
-from app.repositories.user import authenticate_user
+from app.core.dependencies import get_user_service
+from app.exceptions.base import EmailExistsError, IncorrectPasswordError
 from app.auth.schemas import Token
 from app.auth.jwt_utils import create_access_token
-from app.db.deps import get_db
-from app.models.models import User, UserRole
+from app.models.models import User
 from app.schemas.user import PasswordChange, UserCreate
+from app.services.user import UserService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register_user(payload: UserCreate, db: Session = Depends(get_db)):
+def register_user(user_create: UserCreate, user_service: UserService = Depends(get_user_service)):
     """
     Self-signup: create a new user and return a JWT access token.
-    - Normalizes email
-    - Hashes password (never store plaintext)
+    - 422 if email or password missing
+    - call create_user from UserService
     - 409 if email already used
+    - return JWT token
+    - Password is hashed in UserService.create_user
     """
-    if not payload.email or not payload.password:
+    if not user_create.email or not user_create.password:
         raise HTTPException(status_code=422, detail="email and password are required")
 
-    email = payload.email.strip().lower()
-    user = User(
-        name=payload.name,
-        email=email,
-        password_hash=hash_password(payload.password),  # NOTE: store hash, not plaintext
-        is_active=True,
-        role=UserRole.athlete
+    try:
+        user = user_service.create_user(user_create)
+    except EmailExistsError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
     )
 
-    db.add(user)
-    try:
-        db.commit()
-    except IntegrityError as e:
-        db.rollback()
-        if getattr(getattr(e, "orig", None), "pgcode", None) == "23505":
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered",
-            )
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Could not create user")
-    db.refresh(user)
-    # Use user.id as JWT subject; it’s stable even if email changes
-    token = create_access_token(sub=str(user.id))
+    token = create_access_token(sub=user.id)
     return {"access_token": token, "token_type": "bearer"}
 
 
 @router.post("/login", response_model=Token)
 def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_service: UserService = Depends(get_user_service),
 ):
     """Authenticate user and return a JWT token"""
-    email = form_data.username.strip().lower()
-    user = authenticate_user(db, email=email, password=form_data.password)
+    email = form_data.username
+    user = user_service.authenticate(email=email, password=form_data.password)
+
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,30 +53,26 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return {"access_token": create_access_token(sub=str(user.id)), "token_type": "bearer"}
+    return {"access_token": create_access_token(sub=user.id), "token_type": "bearer"}
 
 
 @router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
 def change_password(
     payload: PasswordChange,
-    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    user_service: UserService = Depends(get_user_service),
 ):
     """Change password for the current authenticated user"""
-    if not current_user.check_password(payload.old_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password"
-        )
-
-    current_user.password = payload.new_password
-    db.add(current_user)
-
     try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
+        user_service.change_password(
+            user=current_user,
+            old_password=payload.old_password,
+            new_password=payload.new_password,
+        )
+    except IncorrectPasswordError:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect old password",
         )
 
     return None

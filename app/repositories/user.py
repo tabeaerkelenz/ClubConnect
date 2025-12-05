@@ -1,37 +1,93 @@
-# app/repositories/user.py
-from collections.abc import Mapping
-from typing import Any, Optional
-from sqlalchemy.orm import Session
+from typing import Any, Mapping, Sequence
+
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session as SASession
 
-from app.core.security import verify_password
-from app.models.models import User
+from app.models.models import User, UserRole
+from app.exceptions.base import EmailExistsError
 
-def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
-    return db.get(User, user_id)
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    stmt = select(User).where(User.email == email)
-    return db.execute(stmt).scalar_one_or_none()
+class UserRepository:
+    def __init__(self, db: SASession):
+        self.db = db
 
-def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    """
-    Return the User if email+password are valid, otherwise None.
-    NOTE: Caller decides what to do if user is inactive.
-    """
-    user = get_user_by_email(db, email)
-    if not user:
-        return None
-    if not verify_password(password, user.password_hash):
-        return None
-    return user
+    # --- basic loaders ---
 
-def update_user_fields(db: Session, user: User, data: Mapping[str, Any]) -> User:
-    for k, v in data.items():
-        setattr(user, k, v)
-    return user
+    def get(self, user_id: int) -> User | None:
+        """Return user by id or None."""
+        return self.db.get(User, user_id)
 
-def commit_and_refresh(db: Session, obj: Any) -> Any:
-    db.commit()
-    db.refresh(obj)
-    return obj
+    def get_by_email(self, email: str) -> User | None:
+        """Return user by email or None."""
+        stmt = select(User).where(User.email == email)
+        result = self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    # --- listing ---
+
+    def list(
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 50,
+        q: str | None = None,
+        roles: Sequence[UserRole] | None = None,
+    ) -> list[User]:
+        """List users with optional role filter and pagination."""
+        stmt = select(User)
+
+        if q:
+            stmt = stmt.where(User.name.contains(q, autoescape=True))
+        if roles:
+            stmt = stmt.where(User.role.in_(list(roles)))
+
+        stmt = stmt.order_by(User.name.asc()).offset(skip).limit(limit)
+
+        result = self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    # --- helpers ---
+
+    def _commit_with_email_guard(self, user: User) -> User:
+        """Commit and refresh user, mapping unique email errors."""
+        try:
+            self.db.commit()
+        except IntegrityError as e:
+            self.db.rollback()
+            if hasattr(e.orig, "pgcode") and e.orig.pgcode == "23505":
+                # 23505 = unique_violation
+                constraint = getattr(e.orig.diag, "constraint_name", None)
+                if constraint == "users_email_key":
+                    raise EmailExistsError from e
+            raise
+        self.db.refresh(user)
+        return user
+
+    # --- create & update ---
+
+    def create_user(self, **kwargs: Any) -> User:
+        """Create a new user."""
+        user = User(**kwargs)
+        self.db.add(user)
+        return self._commit_with_email_guard(user)
+
+    def update_fields(self, user: User, updates: Mapping[str, Any]) -> User:
+        """Apply partial updates to a user and persist."""
+        for field, value in updates.items():
+            setattr(user, field, value)
+        self.db.add(user)
+        return self._commit_with_email_guard(user)
+
+    def set_active(self, user: User, is_active: bool) -> User:
+        """Toggle is_active and persist."""
+        user.is_active = is_active
+        self.db.add(user)
+        return self._commit_with_email_guard(user)
+
+    # --- delete ---
+
+    def delete_user(self, user: User) -> None:
+        """Delete an existing user."""
+        self.db.delete(user)
+        self.db.commit()

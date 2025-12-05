@@ -23,6 +23,16 @@ class ConflictError(DomainError):
 class EmailExistsError(ConflictError):
     detail = "Email already exists"
 
+class IncorrectPasswordError(Exception):
+    """Raised when the old password does not match."""
+    detail = "Incorrect password"
+
+
+class AuthError(Exception):
+    """Domain error for auth problems."""
+    detail = "Authentication error"
+
+
 # club exceptions
 class ClubNotFoundError(NotFoundError):
     detail = "Club not found"

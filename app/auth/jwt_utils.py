@@ -3,12 +3,7 @@ from jose import jwt, JWTError
 from jose.exceptions import ExpiredSignatureError
 from app.auth.schemas import TokenPayload
 from app.core.config import settings
-
-
-class AuthError(Exception):
-    """Domain error for auth problems."""
-
-    pass
+from app.exceptions.base import AuthError
 
 
 def _secret(val):  # handles SecretStr or plain str
