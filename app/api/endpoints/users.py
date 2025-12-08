@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_active_user
-from app.db.deps import get_db
+from app.core.dependencies import get_user_service
 from app.models.models import User
 from app.schemas.user import UserRead, UserUpdate
-from app.services.user import update_me_service
+from app.services.user import UserService
+from tests.unit.services.test_users_services import user_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -14,11 +14,11 @@ def get_me(current_user: User = Depends(get_current_active_user)):
     """Get the current authenticated user."""
     return current_user
 
-@router.patch("/me", response_model=UserRead)
+@router.patch("/me", response_model=UserUpdate)
 def update_me(
-    payload: UserUpdate,
-    db: Session = Depends(get_db),
+    user_update: UserUpdate,
     current_user: User = Depends(get_current_active_user),
+    user_service: UserService = Depends(get_user_service)
 ):
     """Update the current authenticated user."""
-    return update_me_service(db, current_user, payload)
+    return user_service.update_me(current_user, user_update)

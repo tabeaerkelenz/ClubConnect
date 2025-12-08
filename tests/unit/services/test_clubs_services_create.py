@@ -83,6 +83,7 @@ def test_create_club_duplicate_slug(
     mock_club_repo.add_membership.assert_not_called()
 
 
+# test get_club_service
 def test_get_club_success(
     club_service: ClubService,
     mock_club_repo: MagicMock,
@@ -135,6 +136,7 @@ def test_get_my_clubs_success(
     assert result == mock_clubs
 
 
+# test list_clubs_service
 def test_list_clubs_success(
     club_service: ClubService,
     mock_club_repo: MagicMock,
