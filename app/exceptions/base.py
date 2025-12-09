@@ -53,6 +53,15 @@ class MembershipExistsError(ConflictError):
 class LastCoachViolationError(ConflictError):
     detail = "Last Coach Violation"
 
+class CoachRequiredError(PermissionDeniedError):
+    detail = "Coach role required"
+
+class OwnerRequiredError(PermissionDeniedError):
+    detail = "Owner role required"
+
+class CoachOrOwnerRequiredError(PermissionDeniedError):
+    detail = "Coach or Owner role required"
+
 
 # Plan errors
 class NotCoachOfClubError(PermissionDeniedError):
