@@ -21,10 +21,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import event
 
 from app.main import app
-from app.db.database import build_session_maker
-from app.db.models import  PlanType
+from app.models.models import  PlanType
 from app.db.base import Base
-from tests.helpers_auth import register_user, login_and_get_token  # you already use these
+from .helpers_auth import register_user, login_and_get_token
 
 # ---- DB setup (SQLite :memory:) ----
 

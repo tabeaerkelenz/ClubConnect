@@ -1,4 +1,4 @@
-from tests.helpers_auth import register_user, login_and_get_token, auth_headers
+from .helpers_auth import register_user, login_and_get_token, auth_headers
 
 PASSWORD1 = "pw123456"
 
