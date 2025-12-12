@@ -5,7 +5,7 @@ from app.services.membership import MembershipService
 from app.repositories.membership import MembershipRepository
 from app.repositories.user import UserRepository
 from app.repositories.club import ClubRepository
-from app.models.models import MembershipRole, Membership, User, Club
+from app.models.models import MembershipRole
 from app.exceptions.base import (
     UserNotFoundError,
     ClubNotFoundError,
@@ -15,28 +15,8 @@ from app.exceptions.base import (
     CoachRequiredError,
     CoachOrOwnerRequiredError
 )
+from tests.unit.services.factories import make_user, make_club, make_membership
 
-# --- helper factories ---
-
-def make_user(user_id: int, email: str):
-    u = User()
-    u.id = user_id
-    u.email = email
-    return u
-
-def make_club(club_id: int, name: str):
-    c = Club()
-    c.id = club_id
-    c.name = name
-    return c
-
-def make_membership(membership_id: int, club_id: int, user_id: int, role: MembershipRole):
-    m = Membership()
-    m.id = membership_id
-    m.club_id = club_id
-    m.user_id = user_id
-    m.role = role
-    return m
 
 # --- fixtures ---
 @pytest.fixture
@@ -73,7 +53,7 @@ def test_add_member_by_email_normalizes_email_and_creates_membership(
     mock_club_repo: MagicMock,
 ):
     # Arrange
-    user = make_user(email="user@example.com", user_id=42)
+    user = make_user()
     club_id = 10
     club = make_club(club_id=club_id, name="Test Club")
 

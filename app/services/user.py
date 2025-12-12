@@ -168,6 +168,6 @@ class UserService:
         if not user.check_password(old_password):
             raise IncorrectPasswordError()
 
-        user.password = new_password
+        new_hash = hash_password(new_password)
 
-        return self.repo.update_fields(user, {})
+        return self.repo.update_fields(user, {"password_hash": new_hash})

@@ -1,17 +1,15 @@
 from unittest.mock import MagicMock
-
 import pytest
 
-from app.core.security import hash_password
 from app.exceptions.base import (
     UserNotFoundError,
     EmailExistsError,
     IncorrectPasswordError
 )
-from app.models.models import User, UserRole
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.user import UserService
+from tests.unit.services.factories import make_user
 
 
 @pytest.fixture
@@ -24,13 +22,14 @@ def user_service(mock_user_repo: MagicMock) -> UserService:
     return UserService(repo=mock_user_repo)
 
 
+'''
 def make_user(
     user_id: int = 1,
     name: str = "Alice",
     email: str = "alice@example.com",
     role: UserRole | None = None,
     is_active: bool = True,
-    raw_password: str = "pw123",  # default raw password
+    raw_password: str = "pw123456",  # default raw password
 ) -> User:
     return User(
         id=user_id,
@@ -40,7 +39,7 @@ def make_user(
         role=role or list(UserRole)[0],
         is_active=is_active,
     )
-
+'''
 
 # --- get_user ---
 
@@ -96,7 +95,9 @@ def test_list_users_whitespace_q_becomes_none(user_service: UserService, mock_us
 # --- create_user ---
 
 
-def test_create_user_normalizes_and_hashes_password(user_service: UserService, mock_user_repo: MagicMock):
+def test_create_user_normalizes_and_hashes_password(user_service: UserService, mock_user_repo: MagicMock, monkeypatch):
+    monkeypatch.setattr("app.services.user.hash_password", lambda pw: f"hashed-{pw}")
+
     user_create = UserCreate(
         name="  Alice  ",
         email="  ALICE@EXAMPLE.COM  ",
@@ -124,13 +125,15 @@ def test_create_user_normalizes_and_hashes_password(user_service: UserService, m
     assert "is_active" in kwargs
 
 
-def test_create_user_propagates_email_exists_error(user_service: UserService, mock_user_repo: MagicMock):
+def test_create_user_propagates_email_exists_error(user_service: UserService, mock_user_repo: MagicMock, monkeypatch):
+    monkeypatch.setattr("app.services.user.hash_password", lambda pw: "hashed_pw")
+
     user_create = UserCreate(
         name="Bob",
         email="bob@example.com",
         password="pw_with_8_chars",
     )
-    mock_user_repo.create_user.side_effect = EmailExistsError
+    mock_user_repo.create_user.side_effect = EmailExistsError()
 
     with pytest.raises(EmailExistsError):
         user_service.create_user(user_create)
@@ -186,9 +189,11 @@ def test_update_me_raises_when_email_taken(
 def test_authenticate_returns_user_on_valid_credentials(
     user_service: UserService,
     mock_user_repo: MagicMock,
+    monkeypatch
 ):
-    # user created with raw_password="pw123" by default
-    user = make_user(email="user@example.com", raw_password="pw123")
+    monkeypatch.setattr("app.services.user.verify_password", lambda raw, hashed: True)
+
+    user = make_user(email="user@example.com", password_hash="fake-hash")
     mock_user_repo.get_by_email.return_value = user
 
     result = user_service.authenticate(email="  USER@example.com  ", password="pw123")
@@ -209,7 +214,7 @@ def test_authenticate_returns_none_if_password_invalid(user_service: UserService
     mock_user_repo.get_by_email.return_value = user
 
     from app.core import security as security_mod
-    monkeypatch.setattr(security_mod, "verify_password", lambda pw, hash_: False)
+    monkeypatch.setattr("app.services.user.verify_password", lambda pw, hash_: False)
 
     result = user_service.authenticate(email="user@example.com", password="wrong")
     assert result is None
@@ -255,24 +260,21 @@ def test_deactivate_user_happy_path(user_service: UserService, mock_user_repo: M
 
 
 def test_change_password_happy_path(user_service: UserService, mock_user_repo: MagicMock, monkeypatch: pytest.MonkeyPatch):
-    user = make_user()
-    # fake check_password for this user
-    def fake_check(pw: str) -> bool:
-        return pw == "oldpw"
+    user = make_user(password_hash="old-hash")
 
-    user.check_password = fake_check  # monkeypatch the instance method
+    user.check_password = lambda pw: pw == "oldpw"
+
+    monkeypatch.setattr("app.services.user.hash_password", lambda pw: "new-hash")
 
     mock_user_repo.update_fields.return_value = user
 
     result = user_service.change_password(user=user, old_password="oldpw", new_password="newpw")
 
     assert result is user
-    mock_user_repo.update_fields.assert_called_once()
-    args, kwargs = mock_user_repo.update_fields.call_args
-
-    assert args[0] is user
-    assert args[1] == {}  # or whatever you decided to pass as updates
-
+    mock_user_repo.update_fields.assert_called_once_with(
+        user,
+        {"password_hash": "new-hash"},
+    )
 
 def test_change_password_incorrect_old_raises(user_service: UserService, mock_user_repo: MagicMock):
     user = make_user()

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 import enum
 from sqlalchemy import (
     Column,
@@ -49,6 +49,7 @@ class DayLabel(enum.Enum):
 
 
 class PlanAssigneeRole(enum.Enum):
+    owner = "owner"
     coach = "coach"
     athlete = "athlete"
 
@@ -118,6 +119,10 @@ class User(Base, TimestampMixin):
 
     @password.setter
     def password(self, plain: str):
+        """
+        Convenience setter.
+        Prefer hashing in UserService instead of using this directly.
+        """
         from app.core.security import hash_password
 
         self.password_hash = hash_password(plain)
@@ -174,7 +179,7 @@ class Plan(Base, TimestampMixin):
     __tablename__ = "plans"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False, index=True, unique=True)
     plan_type = Column(Enum(PlanType), nullable=False)  # club, personal
     club_id = Column(
         Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False
@@ -195,7 +200,8 @@ class Plan(Base, TimestampMixin):
         "Exercise", back_populates="plan", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (Index("ix_plans_club_id", "club_id"),)
+    __table_args__ = (Index("ix_plans_club_id", "club_id"),
+                      UniqueConstraint("club_id", "name", name="uq_plans_club_name"),)
 
 
 class Exercise(Base, TimestampMixin):
