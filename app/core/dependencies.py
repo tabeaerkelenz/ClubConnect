@@ -3,12 +3,16 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.repositories.club import ClubRepository
+from app.repositories.exercise import ExerciseRepository
 from app.repositories.membership import MembershipRepository
 from app.repositories.plan import PlanRepository
+from app.repositories.session import SessionRepository
 from app.repositories.user import UserRepository
 from app.services.club import ClubService
+from app.services.exercise import ExerciseService
 from app.services.membership import MembershipService
 from app.services.plan import PlanService
+from app.services.session import SessionService
 from app.services.user import UserService
 
 #---- Dependency injection functions ----
@@ -46,3 +50,29 @@ def get_plan_service(plan_repo: PlanRepository = Depends(get_plan_repository),
                      membership_service: MembershipService = Depends(get_membership_service)
                      ) -> PlanService:
     return PlanService(plan_repo, membership_service)
+
+
+# ---- Session ----
+def get_session_repository(db: Session = Depends(get_db)) -> SessionRepository:
+    return SessionRepository(db)
+
+def get_session_service(
+    session_repo: SessionRepository = Depends(get_session_repository),
+    membership_service: MembershipService = Depends(get_membership_service),
+) -> SessionService:
+    return SessionService(session_repo=session_repo, membership_service=membership_service)
+
+
+
+# ---- Exercise ----
+def get_exercise_repository(db: Session = Depends(get_db)):
+    return ExerciseRepository(db)
+
+def get_exercise_service(
+    exercise_repo: ExerciseRepository = Depends(get_exercise_repository),
+    membership_service: MembershipService = Depends(get_membership_service),
+) -> ExerciseService:
+    return ExerciseService(
+        exercise_repo=exercise_repo,
+        membership_service=membership_service,
+    )

@@ -1,64 +1,180 @@
+from __future__ import annotations
+
 import sqlalchemy as sa
-from sqlalchemy.orm import Session as SASession, Session
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-from app.models.models import Plan, Exercise
+from app.models.models import Exercise, Plan
+from app.models.models import DayLabel
+from app.exceptions.base import (
+    PlanNotFoundError,
+    ExerciseNotFoundError,
+    PositionConflictError,
+    ConflictError,
+)
 
-def get_plan_in_club(db: Session, club_id: int, plan_id: int) -> Plan | None:
-    stmt = sa.select(Plan).where(Plan.id == plan_id, Plan.club_id == club_id)
-    return db.execute(stmt).scalar_one_or_none()
+
+def _is_unique_violation(e: IntegrityError) -> bool:
+    # Postgres unique violation
+    return getattr(getattr(e, "orig", None), "pgcode", None) == "23505"
 
 
-def get_exercise_in_plan_and_club(
-    db: SASession, club_id: int, plan_id: int, exercise_id: int
-) -> Exercise:
-    """Get exercise by id, plan_id and club_id or raise ExerciseNotFoundError."""
-    stmt = (
-        sa.select(Exercise)
-        .join(Plan, Plan.id == Exercise.plan_id)
-        .where(
-            Exercise.id == exercise_id,
-            Exercise.plan_id == plan_id,
+class ExerciseRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    # ---------- helpers ----------
+
+    def _get_plan_in_club(self, *, club_id: int, plan_id: int) -> Plan:
+        stmt = sa.select(Plan).where(
+            Plan.id == plan_id,
             Plan.club_id == club_id,
         )
-    )
-    exercise = db.execute(stmt).scalar_one_or_none()
-    return exercise
+        plan = self.db.execute(stmt).scalar_one_or_none()
+        if not plan:
+            raise PlanNotFoundError()
+        return plan
 
+    def _get_exercise_in_plan(
+        self, *, club_id: int, plan_id: int, exercise_id: int
+    ) -> Exercise:
+        stmt = (
+            sa.select(Exercise)
+            .join(Plan, Plan.id == Exercise.plan_id)
+            .where(
+                Exercise.id == exercise_id,
+                Exercise.plan_id == plan_id,
+                Plan.club_id == club_id,
+            )
+        )
+        exercise = self.db.execute(stmt).scalar_one_or_none()
+        if not exercise:
+            raise ExerciseNotFoundError()
+        return exercise
 
-def next_position(db: SASession, plan_id: int) -> int:
-    """Get the next available position for an exercise in a plan."""
-    stmt = sa.select(sa.func.coalesce(sa.func.max(Exercise.position) + 1, 0)).where(
-        Exercise.plan_id == plan_id
-    )
-    return db.execute(stmt).scalar_one()
+    def _next_position(self, *, plan_id: int) -> int:
+        # returns 0 if no exercises yet
+        stmt = sa.select(sa.func.coalesce(sa.func.max(Exercise.position) + 1, 0)).where(
+            Exercise.plan_id == plan_id
+        )
+        return self.db.execute(stmt).scalar_one()
 
+    # ---------- public API ----------
 
-def insert_exercise(db: Session, *, plan_id: int, **fields) -> Exercise:
-    exercise = Exercise(plan_id=plan_id, **fields)
-    db.add(exercise)
-    db.flush()
-    return exercise
+    def list_in_plan(self, *, club_id: int, plan_id: int) -> list[Exercise]:
+        # strict: plan must exist in club
+        self._get_plan_in_club(club_id=club_id, plan_id=plan_id)
 
+        stmt = (
+            sa.select(Exercise)
+            .where(Exercise.plan_id == plan_id)
+            .order_by(Exercise.position.asc(), Exercise.id.asc())
+        )
+        return self.db.execute(stmt).scalars().all()
 
-def list_exercises(db: SASession, club_id: int, plan_id: int) -> list[Exercise]:
-    """List all exercises in a plan within a club, ordered by position ascending."""
-    stmt = (
-        sa.select(Exercise)
-        .where(Exercise.plan_id == plan_id)
-        .order_by(Exercise.position.asc())
-    )
-    exercises = db.execute(stmt).scalars().all()
+    def get_in_plan(
+        self, *, club_id: int, plan_id: int, exercise_id: int
+    ) -> Exercise:
+        return self._get_exercise_in_plan(
+            club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
+        )
 
-    return exercises
+    def create_in_plan(
+        self,
+        *,
+        club_id: int,
+        plan_id: int,
+        name: str,
+        description: str | None,
+        sets: int | None,
+        repetitions: int | None,
+        position: int | None,
+        day_label: DayLabel | None,
+        _retries: int = 3,
+    ) -> Exercise:
+        self._get_plan_in_club(club_id=club_id, plan_id=plan_id)
 
+        payload = dict(
+            plan_id=plan_id,
+            name=name,
+            description=description,
+            sets=sets,
+            repetitions=repetitions,
+            day_label=day_label,
+        )
 
-def update_exercise_fields(db: Session, exercise: Exercise, **updates) -> Exercise:
-    for k, v in updates.items():
-        setattr(exercise, k, v)
-    db.flush()
-    return exercise
+        desired_pos = position
 
+        # auto-append: retry on unique violation (race)
+        if desired_pos is None:
+            last_err: IntegrityError | None = None
+            for _ in range(_retries):
+                pos = self._next_position(plan_id=plan_id)
+                exercise = Exercise(**payload, position=pos)
 
-def delete_exercise(db: Session, exercise: Exercise) -> None:
-    db.delete(exercise)
-    db.flush()
+                try:
+                    self.db.add(exercise)
+                    self.db.commit()
+                    self.db.refresh(exercise)
+                    return exercise
+                except IntegrityError as e:
+                    self.db.rollback()
+                    last_err = e
+                    if _is_unique_violation(e):
+                        # race on position -> try next
+                        continue
+                    raise ConflictError() from e
+
+            # exhausted retries
+            raise PositionConflictError() from last_err
+
+        # explicit position: single attempt; unique violation => PositionConflictError
+        exercise = Exercise(**payload, position=desired_pos)
+
+        try:
+            self.db.add(exercise)
+            self.db.commit()
+            self.db.refresh(exercise)
+            return exercise
+        except IntegrityError as e:
+            self.db.rollback()
+            if _is_unique_violation(e):
+                raise PositionConflictError() from e
+            raise ConflictError() from e
+
+    def update_in_plan(
+        self,
+        *,
+        club_id: int,
+        plan_id: int,
+        exercise_id: int,
+        updates: dict,
+    ) -> Exercise:
+        exercise = self._get_exercise_in_plan(
+            club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
+        )
+
+        for key, value in updates.items():
+            setattr(exercise, key, value)
+
+        try:
+            self.db.commit()
+            self.db.refresh(exercise)
+            return exercise
+        except IntegrityError as e:
+            self.db.rollback()
+            if _is_unique_violation(e) and "position" in updates:
+                raise PositionConflictError() from e
+            raise ConflictError() from e
+
+    def delete_in_plan(self, *, club_id: int, plan_id: int, exercise_id: int) -> None:
+        exercise = self._get_exercise_in_plan(
+            club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
+        )
+
+        try:
+            self.db.delete(exercise)
+            self.db.commit()
+        except IntegrityError as e:
+            self.db.rollback()
+            raise ConflictError() from e

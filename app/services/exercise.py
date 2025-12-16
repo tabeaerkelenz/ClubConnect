@@ -1,108 +1,69 @@
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session as SASession, Session
-from app.repositories.exercise import (list_exercises, delete_exercise, get_plan_in_club, insert_exercise, next_position,
-                                       get_exercise_in_plan_and_club, update_exercise_fields, )
-from app.models.models import User
-from app.exceptions.base import PlanNotFoundError, PositionConflictError, ExerciseNotFoundError
+from __future__ import annotations
+
+from app.repositories.exercise import ExerciseRepository
+from app.services.membership import MembershipService
+from app.schemas.exercise import ExerciseCreate, ExerciseUpdate
 
 
-def _is_unique_violation(e: IntegrityError) -> bool:
-    return getattr(getattr(e, "orig", None), "pgcode", None) == "23505"
+class ExerciseService:
+    def __init__(
+        self,
+        exercise_repo: ExerciseRepository,
+        membership_service: MembershipService,
+    ):
+        self.exercise_repo = exercise_repo
+        self.membership_service = membership_service
 
+    def list_exercises(self, *, club_id: int, plan_id: int, user_id: int):
+        self.membership_service.require_member_of_club(club_id=club_id, user_id=user_id)
+        return self.exercise_repo.list_in_plan(club_id=club_id, plan_id=plan_id)
 
-def create_exercise_service(db: Session, *, club_id: int, plan_id: int, data, me):
-    plan = get_plan_in_club(db, club_id, plan_id)
-    if not plan:
-        raise PlanNotFoundError()
-
-    payload = data.model_dump(exclude_none=True)
-    desired_pos = payload.get("position")
-
-    try:
-        for _ in range(3):
-            pos = desired_pos if desired_pos is not None else next_position(db, plan_id)
-            try:
-                obj = insert_exercise(
-                    db, plan_id=plan_id,
-                    name=data.name,
-                    description=data.description,
-                    sets=data.sets,
-                    repetitions=data.repetitions,
-                    position=pos,
-                    day_label=data.day_label,
-                )
-                db.commit()
-                db.refresh(obj)
-                return obj
-            except IntegrityError as e:
-                db.rollback()
-                if desired_pos is None and _is_unique_violation(e):
-                    # race on auto-append → try next position
-                    continue
-                # explicit position or other constraint → conflict
-                raise PositionConflictError() from e
-        # exhausted retries
-        raise PositionConflictError()
-    except Exception:
-        db.rollback()
-        raise
-
-
-def list_exercises_service(db: SASession, club_id: int, plan_id: int):
-    try:
-        return list_exercises(db, club_id=club_id, plan_id=plan_id)
-    except Exception as e:
-        raise ExerciseNotFoundError() from e
-
-
-def get_exercise_service(
-    db: SASession, club_id: int, plan_id: int, exercise_id: int, me: User
-):
-    try:
-        return get_exercise_in_plan_and_club(
-            db, club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
+    def get_exercise(self, *, club_id: int, plan_id: int, exercise_id: int, user_id: int):
+        self.membership_service.require_member_of_club(club_id=club_id, user_id=user_id)
+        return self.exercise_repo.get_in_plan(
+            club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
         )
-    except Exception as e:
-        raise ExerciseNotFoundError() from e
 
+    def create_exercise(self, *, club_id: int, plan_id: int, user_id: int, data: ExerciseCreate):
+        self.membership_service.require_coach_or_owner_of_club(club_id=club_id, user_id=user_id)
 
-def update_exercise_service(db: Session, *, club_id: int, plan_id: int, exercise_id: int, data, me):
-    plan = get_plan_in_club(db, club_id, plan_id)
-    if not plan:
-        raise PlanNotFoundError()
-    exercise = get_exercise_in_plan_and_club(db, club_id, plan_id, exercise_id)
-    if not exercise:
-        raise ExerciseNotFoundError()
+        return self.exercise_repo.create_in_plan(
+            club_id=club_id,
+            plan_id=plan_id,
+            name=data.name,
+            description=data.description,
+            sets=data.sets,
+            repetitions=data.repetitions,
+            position=data.position,
+            day_label=data.day_label,
+        )
 
-    updates = data.model_dump(exclude_unset=True)
-    if "position" in updates and updates["position"] is None:
-        updates.pop("position")
+    def update_exercise(
+        self,
+        *,
+        club_id: int,
+        plan_id: int,
+        exercise_id: int,
+        user_id: int,
+        data: ExerciseUpdate,
+    ):
+        self.membership_service.require_coach_or_owner_of_club(club_id=club_id, user_id=user_id)
 
-    try:
-        update_exercise_fields(db, exercise, **updates)
-        db.commit()
-        db.refresh(exercise)
-        return exercise
-    except IntegrityError as e:
-        db.rollback()
-        if _is_unique_violation(e) and "position" in updates:
-            raise PositionConflictError() from e
-        raise
+        updates = data.model_dump(exclude_unset=True)
 
+        # protect: don't allow "position": None to overwrite existing position
+        if updates.get("position") is None:
+            updates.pop("position", None)
 
+        return self.exercise_repo.update_in_plan(
+            club_id=club_id,
+            plan_id=plan_id,
+            exercise_id=exercise_id,
+            updates=updates,
+        )
 
-def delete_exercise_service(db: Session, *, club_id: int, plan_id: int, exercise_id: int):
-    plan = get_plan_in_club(db, club_id, plan_id)
-    if not plan:
-        raise PlanNotFoundError()
-    obj = get_exercise_in_plan_and_club(db, club_id, plan_id, exercise_id)
-    if not obj:
-        raise ExerciseNotFoundError()
-
-    try:
-        delete_exercise(db, obj)
-        db.commit()
-    except IntegrityError as e:
-        db.rollback()
-        # for later if i add “can’t delete if referenced” → raise a domain error here
-        raise
+    def delete_exercise(self, *, club_id: int, plan_id: int, exercise_id: int, user_id: int) -> None:
+        self.membership_service.require_coach_or_owner_of_club(club_id=club_id, user_id=user_id)
+        self.exercise_repo.delete_in_plan(
+            club_id=club_id, plan_id=plan_id, exercise_id=exercise_id
+        )
