@@ -110,3 +110,20 @@ class AttendanceNotFoundError(NotFoundError):
 
 class AttendanceExistsError(ConflictError):
     detail = "Attendance record already exists."
+
+
+# groups
+class GroupNotFoundError(NotFoundError):
+    detail = "Group not found"
+
+
+class GroupNameExistsError(ConflictError):
+    detail = "Group name already exists in this club"
+
+
+class GroupMembershipNotFoundError(NotFoundError):
+    detail = "Group membership not found"
+
+
+class GroupMembershipExistsError(ConflictError):
+    detail = "User is already in this group"
