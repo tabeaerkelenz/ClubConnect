@@ -72,6 +72,10 @@ class PlanNotFoundError(NotFoundError):
     detail = "Plan not found"
 
 
+class PlanNameExistsError(ConflictError):
+    detail = "Plan name already exists"
+
+
 # session errors
 class NotClubMember(PermissionDeniedError):
     detail = "Not Club Member"
@@ -98,3 +102,11 @@ class UserNotClubMember(PermissionDeniedError):
 
 class PlanAssignmentExistsError(ConflictError):
     detail = "Plan assignment already exists."
+
+
+# attendance errors
+class AttendanceNotFoundError(NotFoundError):
+    detail = "Attendance record not found."
+
+class AttendanceExistsError(ConflictError):
+    detail = "Attendance record already exists."
