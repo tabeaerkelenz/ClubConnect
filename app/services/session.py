@@ -1,74 +1,117 @@
-# python
-from typing import List
+from __future__ import annotations
 
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session as SASession
-
-from app.auth.membership_deps import assert_is_coach_or_owner_of_club
-from app.repositories.session import (
-    list_sessions,
-    update_session,
-    delete_session, get_session_in_plan_and_club, insert_session,
-)
-from app.models.models import User
-from app.exceptions.base import SessionNotFound, InvalidTimeRange, ConflictError
-from app.schemas.session import SessionCreate
+from app.repositories.session import SessionRepository
+from app.services.membership import MembershipService
+from app.schemas.session import SessionCreate, SessionUpdate
+from app.exceptions.base import InvalidTimeRange
 
 
-def list_sessions_service(db: SASession, club_id: int, plan_id: int, me: User) -> List:
-    return list_sessions(db, club_id=club_id, plan_id=plan_id, me=me)
+class SessionService:
+    def __init__(
+        self,
+        *,
+        session_repo: SessionRepository,
+        membership_service: MembershipService,
+    ):
+        self.session_repo = session_repo
+        self.membership_service = membership_service
 
+    # ---------- read ----------
 
-def create_session_service(
-    db: SASession, club_id: int, plan_id: int, me: User, data: SessionCreate
-):
-    try:
-        session =  insert_session(db, club_id=club_id, plan_id=plan_id, me=me, data=data)
-        db.commit()
-        db.refresh(session)
-    except IntegrityError as e:
-        raise
+    def list_sessions(
+        self, *, club_id: int, plan_id: int, user_id: int
+    ):
+        self.membership_service.require_member_of_club(
+            club_id=club_id, user_id=user_id
+        )
+        return self.session_repo.list_in_plan(
+            club_id=club_id, plan_id=plan_id
+        )
 
+    def get_session(
+        self, *, club_id: int, plan_id: int, session_id: int, user_id: int
+    ):
+        self.membership_service.require_member_of_club(
+            club_id=club_id, user_id=user_id
+        )
+        return self.session_repo.get_in_plan(
+            club_id=club_id, plan_id=plan_id, session_id=session_id
+        )
 
-def get_session_service(db, club_id: int, plan_id: int, session_id: int, me: User):
-    session = get_session_in_plan_and_club(db, club_id=club_id, plan_id=plan_id, session_id=session_id, me=me)
-    if not session:
-        raise SessionNotFound()
-    return session
+    # ---------- write ----------
 
+    def create_session(
+        self,
+        *,
+        club_id: int,
+        plan_id: int,
+        user_id: int,
+        data: SessionCreate,
+    ):
+        self.membership_service.require_coach_or_owner_of_club(
+            club_id=club_id, user_id=user_id
+        )
 
-def update_session_service(db, club_id, plan_id, session_id, me, data):
-    assert_is_coach_or_owner_of_club(db, user_id=club_id, club_id=club_id)
-    session = get_session_service(db, club_id, plan_id, session_id, me)
+        return self.session_repo.create_in_plan(
+            club_id=club_id,
+            plan_id=plan_id,
+            created_by_id=user_id,
+            name=data.name,
+            description=data.description,
+            starts_at=data.starts_at,
+            ends_at=data.ends_at,
+            location=data.location,
+            note=data.note,
+        )
 
-    # Validate time range before mutating
-    if data.starts_at and data.ends_at and data.starts_at >= data.ends_at:
-        raise InvalidTimeRange()
+    def update_session(
+        self,
+        *,
+        club_id: int,
+        plan_id: int,
+        session_id: int,
+        user_id: int,
+        data: SessionUpdate,
+    ):
+        self.membership_service.require_coach_or_owner_of_club(
+            club_id=club_id, user_id=user_id
+        )
 
-    updates = data.model_dump(exclude_unset=True)
-    new_starts = updates.get("starts_at", getattr(session, "starts_at"))
-    new_ends = updates.get("ends_at", getattr(session, "ends_at"))
+        updates = data.model_dump(exclude_unset=True)
 
-    if new_starts and new_ends and new_starts >= new_ends:
-            raise InvalidTimeRange()
-    try:
-        update_session(db, session_id=session_id, **updates)
-        db.commit()
-        db.refresh(session)
-        return session
-    except IntegrityError as e:
-        db.rollback()
-        raise ConflictError() from e
+        # business rule: validate final time range
+        if "starts_at" in updates or "ends_at" in updates:
+            current = self.session_repo.get_in_plan(
+                club_id=club_id, plan_id=plan_id, session_id=session_id
+            )
 
+            new_starts = updates.get("starts_at", current.starts_at)
+            new_ends = updates.get("ends_at", current.ends_at)
 
-def delete_session_service(
-    db: SASession, club_id: int, plan_id: int, session_id: int, me: User
-):
-    assert_is_coach_or_owner_of_club(db, user_id=club_id, club_id=club_id)
-    session = get_session_service(db, club_id, plan_id, session_id, me)
-    try:
-        delete_session(db, session)
-        db.commit()
-    except IntegrityError as e:
-        db.rollback()
-        raise ConflictError() from e
+            if new_starts >= new_ends:
+                raise InvalidTimeRange()
+
+        return self.session_repo.update_in_plan(
+            club_id=club_id,
+            plan_id=plan_id,
+            session_id=session_id,
+            updates=updates,
+        )
+
+    def delete_session(
+        self,
+        *,
+        club_id: int,
+        plan_id: int,
+        session_id: int,
+        user_id: int,
+    ) -> None:
+        self.membership_service.require_coach_or_owner_of_club(
+            club_id=club_id, user_id=user_id
+        )
+
+        self.session_repo.delete_in_plan(
+            club_id=club_id,
+            plan_id=plan_id,
+            session_id=session_id,
+        )
