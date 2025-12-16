@@ -18,7 +18,6 @@ class GroupMembershipRead(BaseModel):
     role: Optional[str] = None
     joined_at: datetime
 
-# app/schemas/group_membership.py
 class GroupMembershipInvite(BaseModel):
     email: EmailStr
     role: str | None = "member"

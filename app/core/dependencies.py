@@ -5,6 +5,8 @@ from app.db.deps import get_db
 from app.repositories.attendance import AttendanceRepository
 from app.repositories.club import ClubRepository
 from app.repositories.exercise import ExerciseRepository
+from app.repositories.group import GroupRepository
+from app.repositories.group_membership import GroupMembershipRepository
 from app.repositories.membership import MembershipRepository
 from app.repositories.plan import PlanRepository
 from app.repositories.plan_assignment import PlanAssignmentRepository
@@ -13,6 +15,8 @@ from app.repositories.user import UserRepository
 from app.services.attendance import AttendanceService
 from app.services.club import ClubService
 from app.services.exercise import ExerciseService
+from app.services.group import GroupService
+from app.services.group_membership import GroupMembershipService
 from app.services.membership import MembershipService
 from app.services.plan import PlanService
 from app.services.plan_assignment import PlanAssignmentService
@@ -103,3 +107,25 @@ def get_plan_assignment_service(
     membership_service: MembershipService = Depends(get_membership_service),
 ) -> PlanAssignmentService:
     return PlanAssignmentService(repo=repo, membership_service=membership_service)
+
+
+# ---- groups ---
+def get_group_repository(db: Session = Depends(get_db)) -> GroupRepository:
+    return GroupRepository(db)
+
+def get_group_service(
+    group_repo: GroupRepository = Depends(get_group_repository),
+    membership_service: MembershipService = Depends(get_membership_service),
+) -> GroupService:
+    return GroupService(group_repo=group_repo, membership_service=membership_service)
+
+
+#---- group memberships ---
+def get_group_membership_repository(db: Session = Depends(get_db)) -> GroupMembershipRepository:
+    return GroupMembershipRepository(db)
+
+def get_group_membership_service(
+    gm_repo: GroupMembershipRepository = Depends(get_group_membership_repository),
+    membership_service: MembershipService = Depends(get_membership_service),
+) -> GroupMembershipService:
+    return GroupMembershipService(gm_repo=gm_repo, membership_service=membership_service)

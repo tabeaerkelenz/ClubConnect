@@ -1,56 +1,52 @@
-from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from app.models.models import Group
-from app.repositories.user import get_user_by_email
-from app.repositories.group_membership import (
-    list_group_memberships, add_group_member, remove_group_member
-)
-from app.auth.membership_deps import assert_is_coach_of_club, assert_is_member_of_club
+from __future__ import annotations
 
-def _ensure_group_in_club(db: Session, group_id: int, club_id: int):
-    grp = db.execute(select(Group.club_id).where(Group.id == group_id)).scalar_one_or_none()
-    if grp is None:
-        raise HTTPException(404, "Group not found")
-    if grp != club_id:
-        raise HTTPException(403, "Group not in this club")
-
-def list_group_memberships_service(db: Session, me_id: int, club_id: int, group_id: int):
-    assert_is_member_of_club(db, me_id, club_id)
-    _ensure_group_in_club(db, group_id, club_id)
-    return list_group_memberships(db, group_id)
-
-def add_group_member_service(db: Session, me_id: int, club_id: int, group_id: int, user_id: int, role: str | None):
-    assert_is_coach_of_club(db, me_id, club_id)
-    _ensure_group_in_club(db, group_id, club_id)
-    assert_is_member_of_club(db, user_id, club_id)
-    try:
-        return add_group_member(db, group_id, user_id, role)
-    except Exception:
-        db.rollback()
-        raise
+from app.models.models import GroupMembership
+from app.repositories.group_membership import GroupMembershipRepository
+from app.services.membership import MembershipService
 
 
-def invite_group_member_service(db: Session, me_id: int, club_id: int, group_id: int, email: str, role: str | None):
-    assert_is_coach_of_club(db, me_id, club_id)
-    _ensure_group_in_club(db, group_id, club_id)
+class GroupMembershipService:
+    def __init__(
+        self,
+        gm_repo: GroupMembershipRepository,
+        membership_service: MembershipService,
+    ) -> None:
+        self.gms = gm_repo
+        self.memberships = membership_service
 
-    user = get_user_by_email(db, email)
-    if not user:
-        # choose behavior:
-        # 1) 404 (simple)
-        raise HTTPException(status_code=404, detail="User with this email not found")
-        # 2) Or: create pending invite record
+    def list_members(self, *, actor_id: int, club_id: int, group_id: int) -> list[GroupMembership]:
+        self.memberships.require_member_of_club(actor_id, club_id)
+        return self.gms.list_for_group(club_id=club_id, group_id=group_id)
 
-    assert_is_member_of_club(db, user.id, club_id)  # or auto-add to club if that’s your policy
-    return add_group_member(db, group_id=group_id, user_id=user.id, role=role)
+    def add_member(
+        self,
+        *,
+        actor_id: int,
+        club_id: int,
+        group_id: int,
+        user_id: int,
+        role: str | None,
+    ) -> GroupMembership:
+        self.memberships.require_coach_or_owner_of_club(actor_id, club_id)
 
+        # Business rule: can only add club members to groups
+        self.memberships.require_member_of_club(user_id, club_id)
 
-def remove_group_member_service(db: Session, me_id: int, club_id: int, group_id: int, user_id: int):
-    assert_is_coach_of_club(db, me_id, club_id)
-    _ensure_group_in_club(db, group_id, club_id)
-    try:
-        remove_group_member(db, group_id, user_id)
-    except Exception:
-        db.rollback()
-        raise
+        return self.gms.add(club_id=club_id, group_id=group_id, user_id=user_id, role=role)
+
+    def set_member_role(
+        self,
+        *,
+        actor_id: int,
+        club_id: int,
+        group_id: int,
+        user_id: int,
+        role: str | None,
+    ) -> GroupMembership:
+        self.memberships.require_coach_or_owner_of_club(actor_id, club_id)
+        self.memberships.require_member_of_club(user_id, club_id)
+        return self.gms.set_role(club_id=club_id, group_id=group_id, user_id=user_id, role=role)
+
+    def remove_member(self, *, actor_id: int, club_id: int, group_id: int, user_id: int) -> None:
+        self.memberships.require_coach_or_owner_of_club(actor_id, club_id)
+        return self.gms.remove(club_id=club_id, group_id=group_id, user_id=user_id)

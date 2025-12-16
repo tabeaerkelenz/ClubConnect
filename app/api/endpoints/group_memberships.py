@@ -1,71 +1,87 @@
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
 
-from app.db.deps import get_db
-from app.models.models import User
+from app.schemas.group_membership import (
+    GroupMembershipCreate,
+    GroupMembershipRead,
+    GroupMembershipSet,
+)
+from app.services.group_membership import GroupMembershipService
+from app.core.dependencies import get_group_membership_service
+
 from app.auth.deps import get_current_user
-from app.schemas.group_membership import GroupMembershipRead, GroupMembershipCreate, GroupMembershipSet, \
-    GroupMembershipInvite
-from app.services.group_membership import (
-    list_group_memberships_service,
-    add_group_member_service,
-    remove_group_member_service, invite_group_member_service,
+
+
+router = APIRouter(
+    prefix="/clubs/{club_id}/groups/{group_id}/memberships",
+    tags=["Group Memberships"],
 )
 
-router = APIRouter(prefix="/clubs/{club_id}/groups/{group_id}/memberships", tags=["group_memberships"])
 
-@router.get("", response_model=list[GroupMembershipRead], response_model_exclude_none=True)
-def list_group_members_ep(club_id: int, group_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_user)):
-    return list_group_memberships_service(db, me.id, club_id, group_id)
-
-
-@router.post("", response_model=GroupMembershipRead, status_code=status.HTTP_201_CREATED)
-def add_group_member_ep(
+@router.get(
+    "",
+    response_model=list[GroupMembershipRead],
+)
+def list_group_memberships(
     club_id: int,
     group_id: int,
-    payload: GroupMembershipCreate,
-    db: Session = Depends(get_db),
-    me: User = Depends(get_current_user),
+    gm_service: GroupMembershipService = Depends(get_group_membership_service),
+    me=Depends(get_current_user),
 ):
-    """Add a user to the group by user ID."""
-    return add_group_member_service(db, me.id, club_id, group_id, payload.user_id, payload.role)
+    return gm_service.list_members(actor_id=me.id, club_id=club_id, group_id=group_id)
 
 
 @router.post(
-    "/invite",
+    "",
     response_model=GroupMembershipRead,
     status_code=status.HTTP_201_CREATED,
 )
-def invite_group_member_ep(
+def add_group_member(
     club_id: int,
     group_id: int,
-    payload: GroupMembershipInvite,
-    db: Session = Depends(get_db),
-    me: User = Depends(get_current_user),
+    group_member_create: GroupMembershipCreate,
+    gm_service: GroupMembershipService = Depends(get_group_membership_service),
+    me=Depends(get_current_user),
 ):
-    """Invite a user by email to join the group."""
-    return invite_group_member_service(
-        db=db,
-        me_id=me.id,
+    return gm_service.add_member(
+        actor_id=me.id,
         club_id=club_id,
         group_id=group_id,
-        email=payload.email,
-        role=payload.role,
+        user_id=group_member_create.user_id,
+        role=group_member_create.role,
     )
 
 
-@router.put("/{user_id}", response_model=GroupMembershipRead)
-def set_group_member_ep(
+@router.put(
+    "/{user_id}",
+    response_model=GroupMembershipRead,
+)
+def set_group_member_role(
     club_id: int,
     group_id: int,
     user_id: int,
-    payload: GroupMembershipSet,
-    db: Session = Depends(get_db),
-    me: User = Depends(get_current_user),
+    group_member_set: GroupMembershipSet,
+    gm_service: GroupMembershipService = Depends(get_group_membership_service),
+    me=Depends(get_current_user),
 ):
-    return add_group_member_service(db, me.id, club_id, group_id, user_id, payload.role)
+    return gm_service.set_member_role(
+        actor_id=me.id,
+        club_id=club_id,
+        group_id=group_id,
+        user_id=user_id,
+        role=group_member_set.role,
+    )
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_group_member_ep(club_id: int, group_id: int, user_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_user)):
-    remove_group_member_service(db, me.id, club_id, group_id, user_id)
-    return {"ok": True}
+
+@router.delete(
+    "/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_group_member(
+    club_id: int,
+    group_id: int,
+    user_id: int,
+    gm_service: GroupMembershipService = Depends(get_group_membership_service),
+    me=Depends(get_current_user),
+):
+    gm_service.remove_member(actor_id=me.id, club_id=club_id, group_id=group_id, user_id=user_id)
+    return None
