@@ -65,6 +65,7 @@ class LinkMode(enum.Enum):
     snapshot = "snapshot"
     linked = "linked"
 
+
 # –––––––––– Models –––––––––––
 
 

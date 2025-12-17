@@ -1,21 +1,29 @@
 class DomainError(Exception):
     status_code = 500
     default_detail = "Internal error"
+
     def __init__(self, detail: str | None = None, status_code: int | None = None):
+        if status_code is not None:
+            self.status_code = status_code
         if detail is not None:
-            self.detail = detail or self.default_detail
+            self.detail = detail
+        elif not hasattr(self, "detail"):
+            self.detail = self.default_detail
 
     def __str__(self) -> str:
         return self.detail
 
 
 class NotFoundError(DomainError):
+    status_code = 404
     detail = "Not found"
 
 class PermissionDeniedError(DomainError):
+    status_code = 403
     detail = "Forbidden"
 
 class ConflictError(DomainError):
+    status_code = 409
     detail = "Conflict"
 
 
@@ -23,14 +31,15 @@ class ConflictError(DomainError):
 class EmailExistsError(ConflictError):
     detail = "Email already exists"
 
-class IncorrectPasswordError(Exception):
-    """Raised when the old password does not match."""
-    detail = "Incorrect password"
 
-
-class AuthError(Exception):
+class AuthError(DomainError):
     """Domain error for auth problems."""
     detail = "Authentication error"
+
+
+class IncorrectPasswordError(AuthError):
+    """Raised when the old password does not match."""
+    detail = "Incorrect password"
 
 
 # club exceptions
