@@ -9,7 +9,7 @@ from app.exceptions.base import (
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.user import UserService
-from tests.unit.services.factories import make_user
+from .factories import make_user
 
 
 @pytest.fixture

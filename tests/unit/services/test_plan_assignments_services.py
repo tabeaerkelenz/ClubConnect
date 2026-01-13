@@ -18,7 +18,7 @@ from app.exceptions.base import (
     UserNotClubMember,
 )
 
-from factories import make_user
+from .factories import make_user
 
 
 @pytest.fixture

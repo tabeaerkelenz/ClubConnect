@@ -15,7 +15,7 @@ from app.exceptions.base import (
     CoachRequiredError,
     CoachOrOwnerRequiredError
 )
-from tests.unit.services.factories import make_user, make_club, make_membership
+from .factories import make_user, make_club, make_membership
 
 
 # --- fixtures ---

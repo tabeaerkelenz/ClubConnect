@@ -13,7 +13,7 @@ from app.exceptions.base import (
     PositionConflictError,
 )
 
-from factories import make_user
+from .factories import make_user
 
 
 # ---------- fixtures ----------

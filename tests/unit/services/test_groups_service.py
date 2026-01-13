@@ -7,7 +7,7 @@ from app.repositories.group import GroupRepository
 from app.schemas.group import GroupCreate, GroupUpdate
 from app.services.group import GroupService
 from app.services.membership import MembershipService
-from factories import make_user, make_club, make_membership
+from .factories import make_user, make_club, make_membership
 from app.models.models import MembershipRole
 
 

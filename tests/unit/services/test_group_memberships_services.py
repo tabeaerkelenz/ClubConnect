@@ -7,7 +7,7 @@ from app.exceptions.base import GroupMembershipExistsError
 from app.repositories.group_membership import GroupMembershipRepository
 from app.services.group_membership import GroupMembershipService
 from app.services.membership import MembershipService
-from factories import make_user, make_club, make_membership
+from .factories import make_user, make_club, make_membership
 from app.models.models import MembershipRole
 
 

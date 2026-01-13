@@ -17,7 +17,7 @@ from app.exceptions.base import (
     AttendanceNotFoundError,
 )
 
-from factories import make_user
+from .factories import make_user
 
 
 @pytest.fixture

@@ -13,7 +13,7 @@ from app.exceptions.base import (
     PlanNameExistsError,
 )
 from app.models.models import PlanAssigneeRole, Plan, PlanType, User
-from tests.unit.services.factories import make_user
+from .factories import make_user
 
 
 @pytest.fixture

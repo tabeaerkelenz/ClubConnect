@@ -7,7 +7,7 @@ from app.services.membership import MembershipService
 from app.schemas.session import SessionCreate, SessionUpdate
 from app.exceptions.base import InvalidTimeRange
 
-from factories import make_user
+from .factories import make_user
 
 
 # ---------- fixtures ----------
