@@ -5,7 +5,6 @@ from app.core.dependencies import get_user_service
 from app.models.models import User
 from app.schemas.user import UserRead, UserUpdate
 from app.services.user import UserService
-from tests.unit.services.test_users_services import user_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 

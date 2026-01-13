@@ -7,6 +7,8 @@ def register_user(client: TestClient, email: str, password: str, name: str = "Te
 
 def login_and_get_token(client: TestClient, email: str, password: str) -> str:
     r = client.post("/auth/login", data={"username": email, "password": password})
+    print("LOGIN status:", r.status_code)
+    print("LOGIN body:", r.text)
     assert r.status_code == 200, r.text
     return r.json()["access_token"]
 

@@ -108,7 +108,7 @@ class UserService:
             name=name,
             password_hash=password_hash,
             role=UserRole.athlete,
-            is_active=False
+            is_active=True
         )
         return user
 
@@ -145,6 +145,7 @@ class UserService:
         (Optionally you could raise a domain error instead.)
         """
         email_norm = self._normalize_email(email)
+        print("AUTH email:", email)
         if not email_norm:
             return None
 

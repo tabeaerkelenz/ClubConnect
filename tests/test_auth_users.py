@@ -7,6 +7,9 @@ PASSWORD1 = "pw123456"
 
 def test_register_returns_token_201(client, rand_email):
     email = rand_email()
+
+    assert len(PASSWORD1.encode("utf-8")) <= 72
+
     r = register_user(client, email, PASSWORD1, name="Alice")
     assert r.status_code == 201, r.text
     body = r.json()
@@ -17,6 +20,8 @@ def test_register_duplicate_email_409(client, rand_email):
     r1 = register_user(client, email, PASSWORD1, name="Bob")
     assert r1.status_code == 201
     r2 = register_user(client, email, "pw678900", name="Bobby")
+    print("r2 status:", r2.status_code)
+    print("r2 text:", r2.text)
     assert r2.status_code == 409, r2.text
 
 # ---------- AUTH: LOGIN ----------

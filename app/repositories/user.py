@@ -55,11 +55,19 @@ class UserRepository:
             self.db.commit()
         except IntegrityError as e:
             self.db.rollback()
-            if hasattr(e.orig, "pgcode") and e.orig.pgcode == "23505":
-                # 23505 = unique_violation
-                constraint = getattr(e.orig.diag, "constraint_name", None)
+            orig = getattr(e, "orig", None)
+
+            # ---- Postgres: unique_violation ----
+            if hasattr(orig, "pgcode") and orig.pgcode == "23505":
+                constraint = getattr(getattr(orig, "diag", None), "constraint_name", None)
                 if constraint == "users_email_key":
                     raise EmailExistsError from e
+
+            # ---- SQLite: UNIQUE constraint failed: users.email ----
+            msg = str(orig) if orig is not None else str(e)
+            if "UNIQUE constraint failed" in msg and "users.email" in msg:
+                raise EmailExistsError from e
+
             raise
         self.db.refresh(user)
         return user
