@@ -16,7 +16,7 @@ services:
       retries: 30
 
   migrate:
-    image: clubconnect:latest
+    build: .
     env_file:
       - .env
     environment:
@@ -27,8 +27,8 @@ services:
     restart: "no"
 
   api:
-    image: clubconnect:latest
     build: .
+    image: clubconnect:latest
     env_file:
       - .env
     environment:
