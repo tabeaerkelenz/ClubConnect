@@ -64,18 +64,18 @@ def upgrade() -> None:
         "athlete", "trainer", "admin", name="userrole", create_type=False
     )
 
-    membershiprole = postgresql.Enum(
+    membershiprole = postgresql.ENUM(
         "athlete", "coach", name="membershiprole", native_enum=True, create_type=False
     )
-    plantype = postgresql.Enum("club", "personal", name="plantype", native_enum=True, create_type=False)
-    daylabel = postgresql.Enum(
+    plantype = postgresql.ENUM("club", "personal", name="plantype", native_enum=True, create_type=False)
+    daylabel = postgresql.ENUM(
         "mon", "tue", "wed", "thu", "fri", "sat", "sun",
         name="daylabel", native_enum=True, create_type=False
     )
-    planassignee_role = postgresql.Enum(
+    planassignee_role = postgresql.ENUM(
         "coach", "athlete", name="planassignee_role", native_enum=True, create_type=False
     )
-    attendancestatus = postgresql.Enum(
+    attendancestatus = postgresql.ENUM(
         "present", "excused", "absent", name="attendancestatus", native_enum=True, create_type=False
     )
 
