@@ -8,6 +8,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "8bdceb080455"
@@ -59,21 +60,22 @@ def upgrade() -> None:
     _ensure_enums_exist()
 
     # --- 2) Reuse named enums without re-creating them on table create --------
-    userrole = sa.Enum(
-        "athlete", "trainer", "admin", name="userrole", native_enum=True, create_type=False
+    userrole = postgresql.ENUM(
+        "athlete", "trainer", "admin", name="userrole", create_type=False
     )
-    membershiprole = sa.Enum(
+
+    membershiprole = postgresql.Enum(
         "athlete", "coach", name="membershiprole", native_enum=True, create_type=False
     )
-    plantype = sa.Enum("club", "personal", name="plantype", native_enum=True, create_type=False)
-    daylabel = sa.Enum(
+    plantype = postgresql.Enum("club", "personal", name="plantype", native_enum=True, create_type=False)
+    daylabel = postgresql.Enum(
         "mon", "tue", "wed", "thu", "fri", "sat", "sun",
         name="daylabel", native_enum=True, create_type=False
     )
-    planassignee_role = sa.Enum(
+    planassignee_role = postgresql.Enum(
         "coach", "athlete", name="planassignee_role", native_enum=True, create_type=False
     )
-    attendancestatus = sa.Enum(
+    attendancestatus = postgresql.Enum(
         "present", "excused", "absent", name="attendancestatus", native_enum=True, create_type=False
     )
 
