@@ -101,33 +101,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
 
-    # ---- Groups & Group Memberships ----
-    op.create_table(
-        "groups",
-        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
-        sa.Column("club_id", sa.Integer(), nullable=False),
-        sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.ForeignKeyConstraint(["club_id"], ["clubs.id"], ondelete="CASCADE"),
-        sa.UniqueConstraint("club_id", "name", name="uq_group_name_per_club"),
-    )
-    op.create_index("ix_groups_club_id", "groups", ["club_id"])
-
-    op.create_table(
-        "group_memberships",
-        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
-        sa.Column("group_id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.ForeignKeyConstraint(["group_id"], ["groups.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.UniqueConstraint("group_id", "user_id", name="uq_group_member"),
-    )
-    op.create_index("ix_group_memberships_group_id", "group_memberships", ["group_id"])
-    op.create_index("ix_group_memberships_user_id", "group_memberships", ["user_id"])
-
     op.create_table(
         "memberships",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
