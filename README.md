@@ -18,16 +18,21 @@ It helps **trainers** and **athletes** to organize training, track goals, and ma
 
 ## 🛠 Tech Stack
 
-|  **Layer**   | **Tool/Library**         |
-|----------|----------------------|
-| Language | Python               |
-| Framework | FastAPI              |
-| ORM      | SQLAlchemy           |
-| Database | PostgreSQL           |
-| Migrations | Alembic              |
-| Deployment | Render.com           |
-| Auth     | JWT, OAuth2 Password Flow |
-| Validation | Pydantic             |
+| **Layer**        | **Tool/Library**                                      |
+|------------------|-------------------------------------------------------|
+| Language         | Python                                                |
+| Framework        | FastAPI                                               |
+| ORM              | SQLAlchemy                                            |
+| Database         | PostgreSQL                                            |
+| Migrations       | Alembic                                               |
+| Deployment       | Render.com                                            |
+| Auth             | JWT, OAuth2 Password Flow                             |
+| Validation       | Pydantic                                              |
+| Containerization | Docker                                                |
+| Orchenstration   | Docker Compose                                        |
+| Architecture     | Layered (Routers, Services, CRUD, Schemas, Models)    |
+| Startup Flow     | Deterninistic startup chain (db -> migrate -> api)    |
+| Testing          | Pytest (service-layer unit tests, mocked repositories |
 
 
 ---
@@ -79,11 +84,38 @@ in `app/`:
     └── plan.py                 # (more in repo)
 ```
 
+## Deployment & Setup (Docker)
+ 
+- ClubConnect runs as a fully containerized backend service.
+- No local Python or PostgreSQL installation is required.
+
+### Quickstart: 
+   ```bash
+   git clone https://github.com/tabeaerkelenz/ClubConnect.git
+   cd ClubConnect
+   cp .env.example .env
+   docker compose up --build
+   ```
+
+### Open API documentation:
+   - [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### Useful commands:
+```bash
+   docker compose down               # stops everything
+   docker compose down -v            # reset (data loss)
+   docker compose logs -f api        # view API logs
+   docker compose logs -f db         # view DB logs
+   docker compose run --rm migrate   # re-run migrations
+```
+
+----
+
 ## 🔧 Setup (local development)
 
 1. Clone the repo  
    ```bash
-   git clone https://github.com/<your-username>/clubtrack.git
+   git clone https://github.com/tabeaerkelenz/ClubConnect.git
    cd clubtrack
    ```
 2. Set up a virtual environment
@@ -129,4 +161,4 @@ in `app/`:
 
 If you have suggestions or questions, feel free to open an issue or reach out!
 
-[More about me](https://github.com/tabeaerkelenz)
+[More to see...](https://github.com/tabeaerkelenz)
