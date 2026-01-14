@@ -154,24 +154,17 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
         sa.Column("plan_id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=True),
-        sa.Column("group_id", sa.Integer(), nullable=True),
         sa.Column("role", planassignee_role, nullable=False),  # "coach" | "athlete"
         sa.Column("assigned_by_id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.ForeignKeyConstraint(["assigned_by_id"], ["users.id"], ondelete="RESTRICT"),
         sa.ForeignKeyConstraint(["plan_id"], ["plans.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(["group_id"], ["groups.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("plan_id", "user_id", name="uq_plan_assignees_plan_user"),
-        sa.UniqueConstraint("plan_id", "group_id", name="uq_plan_assignees_plan_group"),
-        sa.CheckConstraint(
-            "(user_id IS NOT NULL)::int + (group_id IS NOT NULL)::int = 1",
-            name="ck_assignment_exactly_one_target",
-        ),
+
     )
     op.create_index("ix_plan_assignments_plan_id", "plan_assignments", ["plan_id"])
     op.create_index("ix_plan_assignments_user_id", "plan_assignments", ["user_id"])
-    op.create_index("ix_plan_assignments_group_id", "plan_assignments", ["group_id"])
 
     op.create_table(
         "sessions",
@@ -225,7 +218,6 @@ def downgrade() -> None:
     op.drop_index("ix_sessions_plan_id_starts_at", table_name="sessions")
     op.drop_table("sessions")
 
-    op.drop_index("ix_plan_assignments_group_id", table_name="plan_assignments")
     op.drop_index("ix_plan_assignments_user_id", table_name="plan_assignments")
     op.drop_index("ix_plan_assignments_plan_id", table_name="plan_assignments")
     op.drop_table("plan_assignments")
