@@ -17,7 +17,6 @@ services:
 
   migrate:
     image: clubconnect:latest
-    build: .
     env_file:
       - .env
     environment:
