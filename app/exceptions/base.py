@@ -136,3 +136,7 @@ class GroupMembershipNotFoundError(NotFoundError):
 
 class GroupMembershipExistsError(ConflictError):
     detail = "User is already in this group"
+
+
+class WorkoutNotFoundError:
+    pass

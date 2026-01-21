@@ -369,3 +369,99 @@ class GroupMembership(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="group_memberships", lazy="selectin")
     group: Mapped["Group"] = relationship("Group", back_populates="memberships", lazy="selectin")
+
+
+class WorkoutPlan(Base, TimestampMixin):
+    __tablename__ = "workout_plans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+
+    name = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+
+    goal = Column(String(120), nullable=True)
+    level = Column(String(40), nullable=True)
+    duration_weeks = Column(Integer, nullable=True)
+
+    is_template = Column(Boolean, nullable=False, default=False)
+
+    club = relationship("Club", lazy="selectin")
+    created_by = relationship("User", foreign_keys=[created_by_id], lazy="selectin")
+
+    items = relationship(
+        "WorkoutPlanItem",
+        back_populates="plan",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("club_id", "name", name="uq_workout_plans_club_name"),
+        Index("ix_workout_plans_club_id", "club_id"),
+        Index("ix_workout_plans_created_by_id", "created_by_id"),
+    )
+
+
+class WorkoutPlanItem(Base, TimestampMixin):
+    __tablename__ = "workout_plan_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    plan_id = Column(Integer, ForeignKey("workout_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    week_number = Column(Integer, nullable=True)  # optional
+    day_label = Column(Enum(DayLabel, name="daylabel"), nullable=True)
+    order_index = Column(Integer, nullable=False, default=0)
+
+    title = Column(String(120), nullable=True)  # z.B. "Upper Body"
+
+    plan = relationship("WorkoutPlan", back_populates="items", lazy="selectin")
+
+    exercises = relationship(
+        "WorkoutPlanExercise",
+        back_populates="item",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "plan_id", "week_number", "day_label", "order_index",
+            name="uq_workout_plan_items_plan_week_day_order",
+        ),
+        CheckConstraint("order_index >= 0", name="ck_workout_plan_items_order_index_nonneg"),
+        CheckConstraint("week_number IS NULL OR week_number >= 1", name="ck_workout_plan_items_week_number_ge_1"),
+        Index("ix_workout_plan_items_plan_id", "plan_id"),
+    )
+
+
+class WorkoutPlanExercise(Base, TimestampMixin):
+    __tablename__ = "workout_plan_exercises"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    item_id = Column(Integer, ForeignKey("workout_plan_items.id", ondelete="CASCADE"), nullable=False, index=True)
+
+
+    name = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+
+    sets = Column(Integer, nullable=True)
+    repetitions = Column(Integer, nullable=True)
+
+    rest_seconds = Column(Integer, nullable=True)
+    tempo = Column(String(32), nullable=True)
+    weight_kg = Column(Integer, nullable=True)
+
+    position = Column(Integer, nullable=False, default=0)
+
+    item = relationship("WorkoutPlanItem", back_populates="exercises", lazy="selectin")
+
+    __table_args__ = (
+        UniqueConstraint("item_id", "position", name="uq_workout_plan_exercises_item_position"),
+        CheckConstraint("position >= 0", name="ck_workout_plan_exercises_position_nonneg"),
+        Index("ix_workout_plan_exercises_item_id", "item_id"),
+    )

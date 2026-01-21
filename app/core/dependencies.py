@@ -12,6 +12,7 @@ from app.repositories.plan import PlanRepository
 from app.repositories.plan_assignment import PlanAssignmentRepository
 from app.repositories.session import SessionRepository
 from app.repositories.user import UserRepository
+from app.repositories.workout_plan import WorkoutPlanRepository
 from app.services.attendance import AttendanceService
 from app.services.club import ClubService
 from app.services.exercise import ExerciseService
@@ -22,6 +23,8 @@ from app.services.plan import PlanService
 from app.services.plan_assignment import PlanAssignmentService
 from app.services.session import SessionService
 from app.services.user import UserService
+from app.services.workout_plan import WorkoutPlanService
+
 
 #---- Dependency injection functions ----
 
@@ -129,3 +132,15 @@ def get_group_membership_service(
     membership_service: MembershipService = Depends(get_membership_service),
 ) -> GroupMembershipService:
     return GroupMembershipService(gm_repo=gm_repo, membership_service=membership_service)
+
+
+# ---- Workout Plans ----
+def get_workout_plan_repository(db: Session = Depends(get_db)) -> WorkoutPlanRepository:
+    return WorkoutPlanRepository(db=db)
+
+
+def get_workout_plan_service(
+    repo: WorkoutPlanRepository = Depends(get_workout_plan_repository),
+    membership_service: MembershipService = Depends(get_membership_service),
+) -> WorkoutPlanService:
+    return WorkoutPlanService(repo=repo, membership_service=membership_service)
