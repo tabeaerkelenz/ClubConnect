@@ -1,4 +1,3 @@
-# app/db/deps.py
 from typing import Iterator
 from sqlalchemy.orm import Session
 from app.db.database import build_session_maker

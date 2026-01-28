@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from sqlalchemy import (
     Column,
@@ -464,4 +464,31 @@ class WorkoutPlanExercise(Base, TimestampMixin):
         UniqueConstraint("item_id", "position", name="uq_workout_plan_exercises_item_position"),
         CheckConstraint("position >= 0", name="ck_workout_plan_exercises_position_nonneg"),
         Index("ix_workout_plan_exercises_item_id", "item_id"),
+    )
+
+
+class AIUsage(Base):
+    __tablename__ = "ai_usage"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    club_id = Column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # which feature is being limited
+    feature = Column(String(64), nullable=False, index=True)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+
+    user = relationship("User", lazy="selectin")
+    club = relationship("Club", lazy="selectin")
+
+    __table_args__ = (
+        Index("ix_ai_usage_user_feature_created_at", "user_id", "feature", "created_at"),
+        Index("ix_ai_usage_club_feature_created_at", "club_id", "feature", "created_at"),
     )

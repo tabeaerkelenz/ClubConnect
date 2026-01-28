@@ -2,6 +2,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
+from app.repositories.ai_usage import AIUsageRepository
 from app.repositories.attendance import AttendanceRepository
 from app.repositories.club import ClubRepository
 from app.repositories.exercise import ExerciseRepository
@@ -24,6 +25,7 @@ from app.services.plan_assignment import PlanAssignmentService
 from app.services.session import SessionService
 from app.services.user import UserService
 from app.services.workout_plan import WorkoutPlanService
+from app.services.workout_plan_ai import WorkoutPlanAIService
 
 
 #---- Dependency injection functions ----
@@ -101,7 +103,7 @@ def get_attendance_service(
     return AttendanceService(attendance_repo=attendance_repo, membership_service=membership_service)
 
 
-# plan_assignments
+# plan assignments
 def get_plan_assignment_repository(db: Session = Depends(get_db)) -> PlanAssignmentRepository:
     return PlanAssignmentRepository(db)
 
@@ -144,3 +146,21 @@ def get_workout_plan_service(
     membership_service: MembershipService = Depends(get_membership_service),
 ) -> WorkoutPlanService:
     return WorkoutPlanService(repo=repo, membership_service=membership_service)
+
+
+# ---- AI Usage Repository ----
+def get_ai_usage_repository(db: Session = Depends(get_db)) -> AIUsageRepository:
+    return AIUsageRepository(db)
+
+
+# ---- workout plan ai ----
+def get_workout_plan_ai_service(
+    workout_plan_service: WorkoutPlanService = Depends(get_workout_plan_service),
+    ai_usage_repo: AIUsageRepository = Depends(get_ai_usage_repository),
+) -> WorkoutPlanAIService:
+    return WorkoutPlanAIService(
+        workout_plan_service=workout_plan_service,
+        ai_usage_repo=ai_usage_repo,
+        daily_limit=3,
+    )
+
