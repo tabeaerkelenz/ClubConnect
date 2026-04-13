@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.repositories.plan_assignment import PlanAssignmentRepository
 from app.services.membership import MembershipService
 from app.schemas.plan_assignment import PlanAssigneeCreate
-from app.exceptions.base import PlanAssigneeNotFound, UserNotClubMember
+from app.exceptions.base import PlanAssigneeNotFound, UserNotClubMember, NotClubMember
 
 class PlanAssignmentService:
     def __init__(self, repo: PlanAssignmentRepository, membership_service: MembershipService) -> None:
@@ -22,7 +22,7 @@ class PlanAssignmentService:
         # user-assignees only for now:
         try:
             self.memberships.require_member_of_club(data.user_id, club_id)
-        except Exception:
+        except NotClubMember:
             raise UserNotClubMember()
 
         return self.repo.create_user_assignee(

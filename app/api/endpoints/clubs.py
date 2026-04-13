@@ -8,6 +8,8 @@ from app.schemas.club import ClubCreate, ClubUpdate, ClubRead
 from app.auth.deps import get_current_active_user, get_current_user
 from app.schemas.membership import MembershipCreate
 from app.services.club import ClubService
+from app.services.membership import MembershipService
+from app.core.dependencies import get_club_service, get_membership_service
 
 router = APIRouter(
     prefix="/clubs",
@@ -47,14 +49,22 @@ def get_club_endpoint(club_id: int, club_service: ClubService = Depends(get_club
 
 @router.patch("/{club_id}", response_model=ClubRead)
 def update_club_endpoint(
-    club_id: int, payload: ClubUpdate, club_service: ClubService = Depends(get_club_service), me: User = Depends(get_current_active_user)
+    club_id: int,
+    payload: ClubUpdate,
+    club_service: ClubService = Depends(get_club_service),
+    membership_service: MembershipService = Depends(get_membership_service),
+    me: User = Depends(get_current_active_user),
 ):
+    membership_service.require_owner_of_club(user_id=me.id, club_id=club_id)
     return club_service.update_club_service(user=me, club_id=club_id, club_update=payload)
 
 
-@router.delete(
-    "/{club_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def delete_club_endpoint(club_id: int, club_service: ClubService = Depends(get_club_service), me: User = Depends(get_current_active_user)):
+@router.delete("/{club_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_club_endpoint(
+    club_id: int,
+    club_service: ClubService = Depends(get_club_service),
+    membership_service: MembershipService = Depends(get_membership_service),
+    me: User = Depends(get_current_active_user),
+):
+    membership_service.require_owner_of_club(user_id=me.id, club_id=club_id)
     club_service.delete_club_service(club_id=club_id)

@@ -81,6 +81,7 @@ class SessionRepository:
         self._get_plan_in_club(club_id=club_id, plan_id=plan_id)
 
         session = SessionModel(
+            club_id=club_id,
             plan_id=plan_id,
             created_by=created_by_id,
             name=name,
