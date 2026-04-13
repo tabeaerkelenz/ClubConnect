@@ -145,7 +145,6 @@ class UserService:
         (Optionally you could raise a domain error instead.)
         """
         email_norm = self._normalize_email(email)
-        print("AUTH email:", email)
         if not email_norm:
             return None
 

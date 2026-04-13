@@ -16,7 +16,7 @@ class UserUpdate(BaseModel):
 
 class UserRead(BaseModel):
     # v2 replacement for orm_mode
-    model_config = ConfigDict(form_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
     email: EmailStr
