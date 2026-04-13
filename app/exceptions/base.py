@@ -143,4 +143,4 @@ class WorkoutNotFoundError:
 
 class RateLimitError(DomainError):
     status_code = 429
-    default_detail = "Daily AI quota reached. Please try again later."
+    detail = "Daily AI quota reached. Please try again later."
