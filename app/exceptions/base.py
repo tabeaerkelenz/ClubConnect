@@ -138,8 +138,8 @@ class GroupMembershipExistsError(ConflictError):
     detail = "User is already in this group"
 
 
-class WorkoutNotFoundError:
-    pass
+class WorkoutNotFoundError(NotFoundError):
+    detail = "Workout not found"
 
 class RateLimitError(DomainError):
     status_code = 429

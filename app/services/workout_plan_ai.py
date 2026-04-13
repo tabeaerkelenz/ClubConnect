@@ -9,6 +9,8 @@ from app.repositories.ai_usage import AIUsageRepository
 from app.schemas.workout_plan_ai import WorkoutPlanAIDraftRequest, WorkoutPlanAIDraft
 from app.services.workout_plan import WorkoutPlanService
 from app.exceptions.base import RateLimitError
+from app.repositories.club import ClubRepository
+from app.models.models import Club
 
 
 FEATURE_WORKOUTPLAN_DRAFT = "workout_plan_draft"
@@ -19,11 +21,13 @@ class WorkoutPlanAIService:
         self,
         workout_plan_service: WorkoutPlanService,
         ai_usage_repo: AIUsageRepository,
+        club_repo: ClubRepository,
         *,
         daily_limit: int = 3,
     ):
         self.workout_plan_service = workout_plan_service
         self.ai_usage_repo = ai_usage_repo
+        self.club_repo = club_repo
         self.daily_limit = daily_limit
 
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -46,7 +50,11 @@ class WorkoutPlanAIService:
             )
 
         # 2) Generate draft JSON via Structured Outputs
-        draft = self._generate_draft(req)
+        club = self.club_repo.get_club(club_id)
+
+        # 3) Draft generieren
+        draft = self._generate_draft(req, club=club)
+    
 
         # 3) Persist using existing service rules (created_by_id = user)
         plan = self.workout_plan_service.create_plan(
@@ -108,11 +116,14 @@ class WorkoutPlanAIService:
             nested=True,
         )
 
-    def _generate_draft(self, req: WorkoutPlanAIDraftRequest) -> WorkoutPlanAIDraft:
+    def _generate_draft(self, req: WorkoutPlanAIDraftRequest, *, club: Club) -> WorkoutPlanAIDraft:
         schema: dict[str, Any] = WorkoutPlanAIDraft.model_json_schema()
 
+        club_name = club.name or "your club"
+        sports_area = club.sport or "general fitness"
+        
         prompt = (
-            "You are a strength & conditioning coach. Generate a workout plan draft.\n"
+            f"You are an sports expert for the Club {club_name} in the sports area {sports_area} you have expertise in creating workout plans for different goals, levels, and constraints. Based on the user's input, generate a workout plan draft that includes structured weeks and days with exercises.\n"
             "Return ONLY valid JSON that matches the provided JSON Schema.\n"
             "Rules:\n"
             "- Provide structured weeks and days_per_week.\n"

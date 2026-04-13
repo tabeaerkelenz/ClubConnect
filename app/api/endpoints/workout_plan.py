@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.schemas.workout_plan import (
     WorkoutPlanCreate,
@@ -21,21 +21,9 @@ from app.core.dependencies import get_workout_plan_service
 from app.auth.deps import get_current_user
 from app.models.models import User
 
-from app.exceptions.base import WorkoutNotFoundError, ConflictError, CoachOrOwnerRequiredError
 
 
 router = APIRouter(tags=["WorkoutPlans"])
-
-
-def _map_domain_error(e: Exception) -> HTTPException:
-    if isinstance(e, WorkoutNotFoundError):
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    if isinstance(e, ConflictError):
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    if isinstance(e, CoachOrOwnerRequiredError):
-        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
 
 # -------------------------
 # Plans
@@ -50,10 +38,8 @@ def list_workout_plans(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.list_plans(club_id=club_id, user_id=user.id)
-    except Exception as e:
-        raise _map_domain_error(e)
+    return service.list_plans(club_id=club_id, user_id=user.id)
+
 
 
 @router.post(
@@ -67,10 +53,8 @@ def create_workout_plan(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.create_plan(club_id=club_id, user_id=user.id, data=payload.model_dump())
-    except Exception as e:
-        raise _map_domain_error(e)
+    return service.create_plan(club_id=club_id, user_id=user.id, data=payload.model_dump())
+
 
 
 @router.get(
@@ -83,10 +67,7 @@ def get_workout_plan_nested(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.get_plan(club_id=club_id, plan_id=plan_id, user_id=user.id, nested=True)
-    except Exception as e:
-        raise _map_domain_error(e)
+    return service.get_plan(club_id=club_id, plan_id=plan_id, user_id=user.id, nested=True)
 
 
 @router.patch(
@@ -101,10 +82,8 @@ def update_workout_plan(
     user: User = Depends(get_current_user),
 ):
     patch = payload.model_dump(exclude_unset=True)
-    try:
-        return service.update_plan(club_id=club_id, plan_id=plan_id, user_id=user.id, patch=patch)
-    except Exception as e:
-        raise _map_domain_error(e)
+    return service.update_plan(club_id=club_id, plan_id=plan_id, user_id=user.id, patch=patch)
+
 
 
 @router.delete(
@@ -117,10 +96,8 @@ def delete_workout_plan(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        service.delete_plan(club_id=club_id, plan_id=plan_id, user_id=user.id)
-    except Exception as e:
-        raise _map_domain_error(e)
+    service.delete_plan(club_id=club_id, plan_id=plan_id, user_id=user.id)
+
 
 
 # -------------------------
@@ -137,10 +114,8 @@ def list_items(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.list_items(club_id=club_id, plan_id=plan_id, user_id=user.id)
-    except Exception as e:
-        raise _map_domain_error(e)
+    return service.list_items(club_id=club_id, plan_id=plan_id, user_id=user.id)
+
 
 
 @router.post(
@@ -155,15 +130,13 @@ def create_item(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.create_item(
+    return service.create_item(
             club_id=club_id,
             plan_id=plan_id,
             user_id=user.id,
             data=payload.model_dump(),
         )
-    except Exception as e:
-        raise _map_domain_error(e)
+
 
 
 @router.patch(
@@ -179,16 +152,13 @@ def update_item(
     user: User = Depends(get_current_user),
 ):
     patch = payload.model_dump(exclude_unset=True)
-    try:
-        return service.update_item(
+    return service.update_item(
             club_id=club_id,
             plan_id=plan_id,
             item_id=item_id,
             user_id=user.id,
             patch=patch,
         )
-    except Exception as e:
-        raise _map_domain_error(e)
 
 
 @router.delete(
@@ -202,15 +172,12 @@ def delete_item(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        service.delete_item(
+    service.delete_item(
             club_id=club_id,
             plan_id=plan_id,
             item_id=item_id,
             user_id=user.id,
         )
-    except Exception as e:
-        raise _map_domain_error(e)
 
 
 # -------------------------
@@ -228,15 +195,12 @@ def list_exercises(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.list_exercises(
+    return service.list_exercises(
             club_id=club_id,
             plan_id=plan_id,
             item_id=item_id,
             user_id=user.id,
         )
-    except Exception as e:
-        raise _map_domain_error(e)
 
 
 @router.post(
@@ -252,16 +216,13 @@ def create_exercise(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        return service.create_exercise(
+    return service.create_exercise(
             club_id=club_id,
             plan_id=plan_id,
             item_id=item_id,
             user_id=user.id,
             data=payload.model_dump(),
         )
-    except Exception as e:
-        raise _map_domain_error(e)
 
 
 @router.patch(
@@ -278,8 +239,7 @@ def update_exercise(
     user: User = Depends(get_current_user),
 ):
     patch = payload.model_dump(exclude_unset=True)
-    try:
-        return service.update_exercise(
+    return service.update_exercise(
             club_id=club_id,
             plan_id=plan_id,
             item_id=item_id,
@@ -287,8 +247,6 @@ def update_exercise(
             user_id=user.id,
             patch=patch,
         )
-    except Exception as e:
-        raise _map_domain_error(e)
 
 
 @router.delete(
@@ -303,13 +261,10 @@ def delete_exercise(
     service: WorkoutPlanService = Depends(get_workout_plan_service),
     user: User = Depends(get_current_user),
 ):
-    try:
-        service.delete_exercise(
+    service.delete_exercise(
             club_id=club_id,
             plan_id=plan_id,
             item_id=item_id,
             exercise_id=exercise_id,
             user_id=user.id,
         )
-    except Exception as e:
-        raise _map_domain_error(e)

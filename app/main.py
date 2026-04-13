@@ -8,6 +8,8 @@ from app.api.endpoints import (
     plans,
     plan_assignments,
     attendances,
+    workout_plan,
+    workout_plan_ai,
 )
 from app.api.endpoints import users, exercises, group_memberships, groups, memberships, sessions
 def register_exception_handlers(app: FastAPI) -> None:
@@ -74,7 +76,8 @@ app.include_router(plan_assignments.router)
 app.include_router(groups.router)
 app.include_router(group_memberships.router)
 app.include_router(attendances.router)
-
+app.include_router(workout_plan.router)
+app.include_router(workout_plan_ai.router)
 
 # to run from project root: python -m uvicorn ClubConnect.app.main:app --reload
 # to run from git root: python -m uvicorn app.main:app --reload

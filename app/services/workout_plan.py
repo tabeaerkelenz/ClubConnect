@@ -28,7 +28,7 @@ class WorkoutPlanService:
 
     def _require_read(self, club_id: int, user_id: int) -> None:
         # member or higher
-        self.membership_service.require_member(club_id=club_id, user_id=user_id)
+        self.membership_service.require_member_of_club(club_id=club_id, user_id=user_id)
 
     def _require_write_plan(self, club_id: int, user_id: int, plan) -> None:
         """
@@ -36,7 +36,7 @@ class WorkoutPlanService:
         - coach/owner in that club
         - OR plan.created_by_id == user_id
         """
-        membership = self.membership_service.get_membership(club_id=club_id, user_id=user_id)
+        membership = self.membership_service.get_membership_for_user_in_club(club_id=club_id, user_id=user_id)
 
         if membership.role in {MembershipRole.coach, MembershipRole.owner}:
             return

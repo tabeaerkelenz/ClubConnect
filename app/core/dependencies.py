@@ -157,10 +157,12 @@ def get_ai_usage_repository(db: Session = Depends(get_db)) -> AIUsageRepository:
 def get_workout_plan_ai_service(
     workout_plan_service: WorkoutPlanService = Depends(get_workout_plan_service),
     ai_usage_repo: AIUsageRepository = Depends(get_ai_usage_repository),
+    club_repo: ClubRepository = Depends(get_club_repository),
 ) -> WorkoutPlanAIService:
     return WorkoutPlanAIService(
         workout_plan_service=workout_plan_service,
         ai_usage_repo=ai_usage_repo,
+        club_repo=club_repo,
         daily_limit=3,
     )
 

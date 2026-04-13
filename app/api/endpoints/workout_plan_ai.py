@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.schemas.workout_plan import WorkoutPlanReadNested
 from app.schemas.workout_plan_ai import WorkoutPlanAIDraftRequest
