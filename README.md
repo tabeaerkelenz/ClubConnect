@@ -1,164 +1,199 @@
-# 🏋️‍️ ClubConnect
-_The final backend Project of my Masterschool journey_
+# ClubConnect
 
+ClubConnect is a FastAPI backend for sports clubs. It helps trainers, coaches, and athletes manage clubs, memberships, training plans, exercise sessions, attendance, and AI-assisted workout plan drafts.
 
-**ClubTrack** is a backend application for sports clubs.  
-It helps **trainers** and **athletes** to organize training, track goals, and manage attendance.
+This project was built as the final backend project of my Masterschool software engineering journey and is designed to demonstrate production-oriented backend skills: authentication, database modeling, layered architecture, automated tests, Docker-based deployment, and API documentation.
 
----
+## Live demo
 
-## Features (MVP)
+Deployment: https://clubconnect-0r4z.onrender.com
 
-- Trainer and athlete management
-- Create and manage training plans
-- Track milestones and goals for athletes
-- Record athlete attendance
+API documentation:
+https://clubconnect-0r4z.onrender.com/docs
 
----
+Health check:
+https://clubconnect-0r4z.onrender.com/healthz
 
-## 🛠 Tech Stack
+Note: Render free-tier services may need a short warm-up after inactivity.
 
-| **Layer**        | **Tool/Library**                                      |
-|------------------|-------------------------------------------------------|
-| Language         | Python                                                |
-| Framework        | FastAPI                                               |
-| ORM              | SQLAlchemy                                            |
-| Database         | PostgreSQL                                            |
-| Migrations       | Alembic                                               |
-| Deployment       | Render.com                                            |
-| Auth             | JWT, OAuth2 Password Flow                             |
-| Validation       | Pydantic                                              |
-| Containerization | Docker                                                |
-| Orchenstration   | Docker Compose                                        |
-| Architecture     | Layered (Routers, Services, CRUD, Schemas, Models)    |
-| Startup Flow     | Deterninistic startup chain (db -> migrate -> api)    |
-| Testing          | Pytest (service-layer unit tests, mocked repositories |
+## Features
 
+- User registration and JWT-based authentication
+- Global user roles: athlete, trainer, admin
+- Club creation and membership management
+- Per-club membership roles: member, coach, owner
+- Training plans, workout plans, exercises, and sessions
+- Plan assignments for athletes and groups
+- Attendance tracking with statuses such as present, absent, excused, and late
+- AI workout plan draft endpoint using the OpenAI API
+- Daily AI quota tracking
+- Domain-specific exception handling with consistent HTTP responses
+- PostgreSQL support for deployment and SQLite-based tests
+- Alembic database migrations
+- Docker Compose startup flow with database, migrations, and API service
+- Unit and integration test coverage with pytest
 
----
-## 🔗 Live Deployment
+## Tech stack
 
-🔹 [https://clubconnect-0r4z.onrender.com](https://clubconnect-0r4z.onrender.com)  
-_(Swagger UI available at `/docs`)_
+| Layer | Technology |
+| --- | --- |
+| Language | Python |
+| API framework | FastAPI |
+| ORM | SQLAlchemy |
+| Database | PostgreSQL, SQLite for tests |
+| Migrations | Alembic |
+| Authentication | JWT, OAuth2 password flow |
+| Validation | Pydantic |
+| Testing | pytest, pytest-cov |
+| Containerization | Docker, Docker Compose |
+| Deployment | Render |
+| AI integration | OpenAI API |
 
----
+## Architecture
 
-## 📂 Project Structure 
+ClubConnect follows a layered backend architecture:
 
+```text
+HTTP request
+  -> app/api/endpoints/      FastAPI route handlers and dependencies
+  -> app/services/           Business logic and permission checks
+  -> app/repositories/       Database access and queries
+  -> app/models/models.py    SQLAlchemy ORM models
 ```
+
+The goal is to keep route handlers thin and place business rules in the service layer. Repository modules isolate database queries, which makes the service layer easier to unit test with mocks.
+
+Key directories:
+
+```text
 .
-└── ClubConnect
-    ├── README.md
-    ├── alembic/
-    ├── alembic.ini
-    ├── app/                     # see “Inside app/” below
-    ├── env.example                   
-    └── requirements.txt   
-```
-in `app/`:
-```
-# app/
-├── __init__.py
-├── main.py
-├── auth/
-│   ├── deps.py
-│   ├── jwt_utils.py
-│   └── routes.py
-├── core/
-│   ├── config.py
-│   └── security.py
-├── crud/
-│   ├── user.py
-│   └── plan.py                 # (more in repo)
-├── db/
-│   ├── database.py
-│   └── models.py
-├── routers/
-│   ├── users.py
-│   └── plans.py                # (more in repo)
-├── schemas/
-│   ├── user.py
-│   └── plan.py                 # (more in repo)
-└── services/
-    ├── user.py
-    └── plan.py                 # (more in repo)
+├── app/
+│   ├── api/endpoints/       API route modules
+│   ├── auth/                JWT utilities, auth routes, auth dependencies
+│   ├── core/                App configuration and shared dependencies
+│   ├── db/                  Database engine/session setup
+│   ├── exceptions/          Domain exceptions and error handling
+│   ├── models/              SQLAlchemy models and enums
+│   ├── repositories/        Database query layer
+│   ├── schemas/             Pydantic request/response schemas
+│   ├── services/            Business logic layer
+│   └── main.py              FastAPI app setup and router registration
+├── alembic/                 Database migrations
+├── tests/                   Unit and integration tests
+├── docker-compose.yml       Local container orchestration
+├── Dockerfile               API image definition
+└── requirements.txt         Python dependencies
 ```
 
-## Deployment & Setup (Docker)
- 
-- ClubConnect runs as a fully containerized backend service.
-- No local Python or PostgreSQL installation is required.
+## API overview
 
-### Quickstart: 
-   ```bash
-   git clone https://github.com/tabeaerkelenz/ClubConnect.git
-   cd ClubConnect
-   cp .env.example .env
-   docker compose up --build
-   ```
+Main resource areas include:
 
-### Open API documentation:
-   - [http://localhost:8000/docs](http://localhost:8000/docs)
+- Auth and users
+- Clubs and memberships
+- Groups and group memberships
+- Plans, workout plans, exercises, and sessions
+- Plan assignments
+- Attendance records
+- AI workout plan drafts
 
-### Useful commands:
+For the full interactive API reference, open `/docs` on the live deployment or local server.
+
+## Getting started with Docker
+
+Docker is the recommended local setup because it starts PostgreSQL, runs migrations, and launches the API in a reproducible way.
+
 ```bash
-   docker compose down               # stops everything
-   docker compose down -v            # reset (data loss)
-   docker compose logs -f api        # view API logs
-   docker compose logs -f db         # view DB logs
-   docker compose run --rm migrate   # re-run migrations
+git clone https://github.com/tabeaerkelenz/ClubConnect.git
+cd ClubConnect
+cp .env.example .env
+docker compose up --build
 ```
 
-----
+Then open:
 
-## 🔧 Setup (local development)
+```text
+http://localhost:8000/docs
+```
 
-1. Clone the repo  
-   ```bash
-   git clone https://github.com/tabeaerkelenz/ClubConnect.git
-   cd clubtrack
-   ```
-2. Set up a virtual environment
-   ```bash
-   python -m venv venv
-   source venv/bin/activate   # On Linux/Mac
-   venv\Scripts\activate      # On Windows
-   ```
-3. Install dependencies
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Configure environment (copy and edit `.env` file)
-   ```
-   cp .env.example .env
-   ```
-5. Run database migrations
-   ```bash
-   alembic upgrade head
-   ```
+Useful Docker commands:
 
-6. Launch API 
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+```bash
+docker compose down              # stop services
+docker compose down -v           # stop services and delete database volume
+docker compose logs -f api       # follow API logs
+docker compose logs -f db        # follow database logs
+docker compose run --rm migrate  # run migrations manually
+```
 
+## Local development without Docker
 
-## 🗺 Roadmap
+```bash
+git clone https://github.com/tabeaerkelenz/ClubConnect.git
+cd ClubConnect
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
+```
 
-- [x] Define a project idea
-- [x] Database schema design
-- [x] Database models for Trainer, Athlete, TrainingPlan, Goals, Attendance
-- [x] CRUD operations for all entities
-- [x] Authentication (JWT-based)
-- [x] Role management (trainer vs. athlete)
-- [x] Deployment on a cloud service (Heroku, Render, or Railway)
-- [ ] Minimal frontend (planned for v2)
-- [ ] Group plan assignments (v2)
-- [ ] Notifications & dashboards (v2)
+The local API will be available at:
 
----
-### 📬 Feedback?
+```text
+http://localhost:8000
+```
 
-If you have suggestions or questions, feel free to open an issue or reach out!
+## Environment variables
 
-[More to see...](https://github.com/tabeaerkelenz)
+Create a `.env` file from `.env.example` and adjust the values for your environment.
+
+| Variable | Purpose |
+| --- | --- |
+| POSTGRES_DB | PostgreSQL database name for Docker Compose |
+| POSTGRES_USER | PostgreSQL user for Docker Compose |
+| POSTGRES_PASSWORD | PostgreSQL password for Docker Compose |
+| DATABASE_URL | SQLAlchemy database connection string |
+| DEBUG | Enables debug behavior during development |
+| SECRET_KEY | JWT signing secret |
+| ALGORITHM | JWT signing algorithm, usually HS256 |
+| ACCESS_TOKEN_EXPIRE_MINUTES | Access token lifetime |
+| OPENAI_API_KEY | Required for AI workout plan generation |
+| OPENAI_MODEL | OpenAI model used for workout plan drafts |
+
+## Running tests
+
+```bash
+pytest -q tests/unit
+pytest tests/
+pytest --cov=app tests/
+```
+
+Current local baseline:
+
+```text
+146 passed, 1 skipped
+```
+
+## Design decisions
+
+- Service-layer permission checks: authorization rules live close to business logic instead of being scattered across route handlers.
+- Domain exceptions: services raise custom errors such as not-found or permission errors, and FastAPI exception handlers convert them into consistent JSON responses.
+- Repository abstraction: database access is separated from business logic, which keeps service tests focused and easy to mock.
+- Docker startup order: Docker Compose waits for the database, runs migrations, then starts the API service.
+- AI quota tracking: AI workout plan generation is rate-limited through database-backed usage tracking.
+
+## Roadmap
+
+- Improve API documentation examples
+- Add more integration tests for edge cases and permissions
+- Add a small frontend or API demo client
+- Expand dashboards and notifications
+- Improve CI/CD visibility and deployment documentation
+
+## Author
+
+Built by Tabea Erkelenz as part of her software engineering portfolio.
+
+GitHub: https://github.com/tabeaerkelenz
