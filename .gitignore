@@ -210,3 +210,6 @@ __marimo__/
 **/__pycache__/
 **/__pycache__/
 .DS_Store
+
+
+.claude/

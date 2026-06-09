@@ -37,11 +37,7 @@ class ClubRepository:
 
     def get_club(self, club_id: int) -> Club | None:
         """Get a club by its ID."""
-        try:
-            return self.db.get(Club, club_id)
-        except IntegrityError as e:
-            if "Not found" in str(e):
-                raise ClubNotFoundError
+        return self.db.get(Club, club_id)
 
 
     def list_clubs(

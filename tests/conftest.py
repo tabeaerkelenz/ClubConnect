@@ -191,6 +191,23 @@ def plan_factory(client, auth_headers, mk_plan_payload):
         return r.json()
     return _make
 
+# ---- WorkoutPlans ----
+@pytest.fixture
+def workout_plan_factory(client, auth_headers):
+    def _make(token: str, club_id: int, payload: dict | None = None):
+        payload = payload or {
+            "name": f"wplan_{uuid.uuid4().hex[:6]}",
+            "is_template": False,
+        }
+        r = client.post(
+            f"/clubs/{club_id}/workout-plans",
+            headers=auth_headers(token),
+            json=payload,
+        )
+        assert r.status_code in (200, 201), f"{r.status_code} -> {r.text}"
+        return r.json()
+    return _make
+
 # ---- Sessions ----
 @pytest.fixture
 def rand_session():
